@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>My Rust App</title>
+<link rel="modulepreload" href="/patchwork/patchwork-21e4d3f24b64ceb5.js" crossorigin="anonymous" integrity="sha384-6N+tuax2Hg85wYSkX+4nNDtaO7FlFI/75/u6UZ+fZpXBCVIw/xKV+uEXCeJPbJxo"><link rel="preload" href="/patchwork/patchwork-21e4d3f24b64ceb5_bg.wasm" crossorigin="anonymous" integrity="sha384-yAJdvnAlh+YiKDyjy8eWoxYKfm73KVkRJ68WBfJSznog6/OH/Nsr5JiECwPdDKtg" as="fetch" type="application/wasm"></head>
+<body>
+<script type="module">
+import init, * as bindings from '/patchwork/patchwork-21e4d3f24b64ceb5.js';
+const wasm = await init({ module_or_path: '/patchwork/patchwork-21e4d3f24b64ceb5_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script></body>
+</html>
