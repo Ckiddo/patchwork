@@ -1,0 +1,6 @@
+# [target.wasm32-unknown-unknown]
+# rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
+
+
+[target.'cfg(target_family = "wasm")']
+rustflags = ['--cfg=getrandom_backend="wasm_js"']

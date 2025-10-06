@@ -1,13 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>My Rust App</title>
-<link rel="modulepreload" href="/patchwork-ae8dce551bb86ec2.js" crossorigin="anonymous" integrity="sha384-dqWpiHRpH0EitKhEShflyzixcOIeHVD1Dphge9c2xVYDj5nLTQpnnoPgMCfPQKWu"><link rel="preload" href="/patchwork-ae8dce551bb86ec2_bg.wasm" crossorigin="anonymous" integrity="sha384-5Kmp4LBWUc5IY3P1by3J+B5ZHIP+ZV/PH0BAYlQEW7op/JiQ8kkjy8jt8K3QKCQk" as="fetch" type="application/wasm"></head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yew + Bevy Game</title>
+    <link rel="stylesheet" href="/styles-7510349bf39d017b.css" integrity="sha384-VQEdpKNu4SyNo2nv/esDd37zNSt0ZZ85hfruTZ1YuVp4Z2hcOo/l04ZUahP4KY/z"/>
+<link rel="modulepreload" href="/patchwork-1ab6ec86da4fb4af.js" crossorigin="anonymous" integrity="sha384-pAOWB1hLSUGcAZ9SvElpSXf2io7i3ID/VHUkuJm/uMXcOY7Ovn3Lw+HmsZE0c5x2"><link rel="preload" href="/patchwork-1ab6ec86da4fb4af_bg.wasm" crossorigin="anonymous" integrity="sha384-Fmdqf+cw7Z6L7bzxLVo7x4UXxxb7DagLiqr0ED0efVu5OX07HKQZ56PeoN3BxsZL" as="fetch" type="application/wasm"></head>
 <body>
+
 <script type="module">
-import init, * as bindings from '/patchwork-ae8dce551bb86ec2.js';
-const wasm = await init({ module_or_path: '/patchwork-ae8dce551bb86ec2_bg.wasm' });
+import init, * as bindings from '/patchwork-1ab6ec86da4fb4af.js';
+const wasm = await init({ module_or_path: '/patchwork-1ab6ec86da4fb4af_bg.wasm' });
 
 
 window.wasmBindings = bindings;
