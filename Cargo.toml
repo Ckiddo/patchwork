@@ -9,6 +9,7 @@ getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"
 
 [dependencies]
 bevy = "0.17.2"
+bevy_egui = "0.37.0"
 bevy_embedded_assets = "0.14.0"
 wasm-bindgen-futures = "0.4.54"
 web-sys = { version = "0.3.81", features = [

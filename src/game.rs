@@ -1,13 +1,7 @@
-use std::path::Path;
-
-use bevy::{
-    asset::{
-         AssetPath,
-        io::{ AssetSourceId},
-    },
-    prelude::*,
-};
+use bevy::prelude::*;
 use web_sys::HtmlCanvasElement;
+
+use crate::new_game::NewGamePlug;
 
 pub async fn run_game(canvas: HtmlCanvasElement) {
     App::new()
@@ -27,28 +21,13 @@ pub async fn run_game(canvas: HtmlCanvasElement) {
                 //     ..default()
                 // }),
         ))
-        .add_systems(Startup, setup)
+        .add_plugins(NewGamePlug)
+        .add_systems(Startup, setup_camera)
         .run();
 }
 
-const WIDTH_BASE: f32 = 100.0;
-// const SHIP_PNG : &[u8] = include_bytes!("../assets/ship.png");
-fn setup(mut commands: Commands, assert_server: Res<AssetServer>) {
-    let ship_path = Path::new("ship.png");
-    let ship_source = AssetSourceId::from("embedded");
-    let asset_path = AssetPath::from_path(&ship_path).with_source(ship_source);
-    // let ship = images.add(setup_)
+pub const WIDTH_BASE: f32 = 100.0;
+
+fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
-
-    commands.spawn((
-        Sprite {
-            image: assert_server.load(asset_path),
-            custom_size: Some(vec2(WIDTH_BASE, WIDTH_BASE)),
-            ..default()
-        },
-        Ship,
-    ));
 }
-
-#[derive(Component)]
-struct Ship;
