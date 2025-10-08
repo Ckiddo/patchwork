@@ -21,3 +21,10 @@ web-sys = { version = "0.3.81", features = [
 yew = { version = "0.21.0", features = ["csr"] }
 
 
+[profile.release]
+# lto = "thin"   # 或者 "fat"（更小但编译更慢）
+lto = "fat"   # 或者 "fat"（更小但编译更慢）
+codegen-units = 1
+strip = "symbols" # 或者 "debuginfo" 以去掉调试信息
+opt-level = "z"  # 最高压缩优化（可能会影响性能）
+panic = "abort"  # 减少 panic 相关代码
