@@ -26,7 +26,6 @@ pub fn get_asset_path(string: &str) -> AssetPath<'_> {
     asset_path
 }
 
-
 pub fn my_button(
     ui: &mut Ui,
     name: &str,

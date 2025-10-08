@@ -45,9 +45,6 @@ pub fn app() -> Html{
                 </button>
             </div>
 
-            <footer>
-                <p>{ "Use arrow keys to move" }</p>
-            </footer>
         </div>
     )
 }
