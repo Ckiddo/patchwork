@@ -1,4 +1,3 @@
-use std::ops::DerefMut;
 
 use bevy::prelude::*;
 use web_sys::HtmlCanvasElement;

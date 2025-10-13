@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::Vec2, prelude::*};
 use bevy_egui::{
     EguiContexts, EguiTextureHandle, EguiUserTextures,
     egui::{self, Align2, Id, vec2},
@@ -6,7 +6,12 @@ use bevy_egui::{
 
 use crate::{
     game::{HEIGHT, WIDTH, WIDTH_BASE},
-    ui::{get_asset_path, my_button, HelloUiTextures},
+    new_game::{
+        chessboard::spawn_chessboard,
+        generate_color, mid_pos,
+        patches::{Patch, new_patches, spawn_patches},
+    },
+    ui::{HelloUiTextures, get_asset_path, my_button},
 };
 
 // GameState
@@ -83,12 +88,6 @@ struct Player {
     last_move_tick: usize,
 }
 
-struct Patch {
-    shape: Vec<usize>,
-    bt: (usize, usize),
-    button: usize,
-}
-
 #[derive(Resource)]
 struct BoardGame {
     // 每个玩家的拼布图版的样式
@@ -147,178 +146,6 @@ impl BoardGame {
     }
 }
 
-fn new_patches() -> Vec<Patch> {
-    let patches = vec![
-        Patch {
-            shape: vec![1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1],
-            bt: (1, 2),
-            button: 0,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1],
-            bt: (0, 3),
-            button: 1,
-        },
-        Patch {
-            shape: vec![0, 0, 1, 0, 1, 1, 1, 1],
-            bt: (10, 4),
-            button: 3,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 1, 0, 1, 0, 0, 1],
-            bt: (3, 4),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 0, 1],
-            bt: (3, 1),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 0, 1, 0, 1, 1, 1],
-            bt: (2, 3),
-            button: 0,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
-            bt: (4, 2),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 1, 1],
-            bt: (2, 2),
-            button: 0,
-        },
-        Patch {
-            shape: vec![0, 1, 1, 1, 1, 0, 0, 1, 1],
-            bt: (3, 6),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1],
-            bt: (2, 1),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 1, 0, 0, 1, 0, 0, 1],
-            bt: (10, 3),
-            button: 2,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 1, 1, 1, 0, 1],
-            bt: (5, 4),
-            button: 2,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1],
-            bt: (7, 2),
-            button: 2,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
-            bt: (2, 1),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 1, 1, 1, 0, 0, 1],
-            bt: (8, 6),
-            button: 3,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 1, 0, 1, 1, 0, 1],
-            bt: (7, 4),
-            button: 2,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 0, 1, 0, 0, 1],
-            bt: (4, 6),
-            button: 2,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1],
-            bt: (1, 4),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1],
-            bt: (1, 5),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 0, 1],
-            bt: (1, 3),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-            bt: (3, 3),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1],
-            bt: (2, 3),
-            button: 1,
-        },
-        Patch {
-            shape: vec![0, 1, 1, 1, 1],
-            bt: (3, 2),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 1],
-            bt: (4, 2),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 1, 0, 1],
-            bt: (1, 2),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 0, 1, 1],
-            bt: (7, 6),
-            button: 3,
-        },
-        Patch {
-            shape: vec![0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
-            bt: (5, 3),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 1, 1, 0, 1, 0, 0, 1],
-            bt: (10, 5),
-            button: 3,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 1, 1, 1],
-            bt: (5, 5),
-            button: 2,
-        },
-        Patch {
-            shape: vec![1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-            bt: (7, 1),
-            button: 1,
-        },
-        Patch {
-            shape: vec![1, 1, 1, 0, 1],
-            bt: (2, 2),
-            button: 0,
-        },
-        Patch {
-            shape: vec![1, 1, 0, 1, 1],
-            bt: (6, 5),
-            button: 2,
-        },
-        Patch {
-            shape: vec![1, 1, 1],
-            bt: (2, 2),
-            button: 0,
-        },
-    ];
-    info!("patches len: {}", &patches.len());
-    patches
-}
-
 // In game
 // 每次进入game 都初始化一个新的游戏资源
 // 布置sprite 场景
@@ -327,41 +154,16 @@ pub fn init_game_resource(mut commands: Commands) {
     let r = BoardGame::new();
     commands.insert_resource(r);
 
-    spawn_grid(&mut commands);
-}
+    // 放置patches
+    spawn_patches(&mut commands);
 
-fn spawn_grid(commands: &mut Commands) {
-    let square_size = 120.0;
-    let world_width = WIDTH;
-    let world_height = HEIGHT;
+    // 放置棋盘
+    let color1 = Color::srgb_u8(128, 128, 128);
+    let color2 = Color::srgb_u8(73, 73, 73);
+    spawn_chessboard(&mut commands, 7.0 * 60.0, 0.0, color1, color2);
 
-    // 计算可以放置多少个方块
-    let cols = (world_width / square_size) as i32; // 16 列
-    let rows = (world_height / square_size) as i32; // 9 行
-
-    for row in 0..rows {
-        for col in 0..cols {
-            // 计算方块中心位置（考虑到坐标从 (0,0) 到 (1920, 1080)）
-            let x = col as f32 * square_size + square_size / 2.0 - WIDTH / 2.0;
-            let y = row as f32 * square_size + square_size / 2.0 - HEIGHT / 2.0;
-
-            // 生成随机或渐变颜色
-            let color = generate_color(row, col, rows, cols);
-
-            commands.spawn((
-                Sprite {
-                    color,
-                    custom_size: Some(Vec2::splat(square_size)),
-                    ..default()
-                },
-                Transform::from_xyz(x, y, 0.0),
-            ));
-        }
-    }
-}
-fn generate_color(row: i32, col: i32, rows: i32, cols: i32) -> Color {
-    let index = (row * cols + col) as f32;
-    let total = (rows * cols) as f32;
-    let hue = (index / total) * 360.0;
-    Color::hsl(hue, 0.8, 0.6)
+    // 放置棋盘
+    let color1 = Color::srgb_u8(116, 218, 255);
+    let color2 = Color::srgb_u8(78, 208, 255);
+    spawn_chessboard(&mut commands, -7.0 * 60.0, 0.0, color1, color2);
 }
