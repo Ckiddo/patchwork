@@ -4,13 +4,139 @@ use bevy::{ecs::query::QueryEntityError, prelude::*};
 
 use crate::{
     game::WIDTH_BASE,
-    new_game::{event::PatchChoosedEvent, generate_color, mid_pos},
+    new_game::{event::PatchChoosedEvent, game_state::ShapeDirection, generate_color, mid_pos},
 };
 
 pub struct Patch {
     shape: Vec<usize>,
     bt: (usize, usize),
     button: usize,
+}
+impl Patch {
+    pub fn get_pos(&self, offset: (isize, isize), dir: ShapeDirection) -> Vec<(isize, isize)> {
+        match dir {
+            ShapeDirection::East => self
+                .shape
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, has)| {
+                    let idx = idx as isize;
+                    let row = idx / 3;
+                    let col = idx % 3;
+                    if *has == 1 {
+                        let r = (col + offset.0, row + offset.1);
+                        Some(r)
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            ShapeDirection::South => self
+                .shape
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, has)| {
+                    let idx = idx as isize;
+                    let row = idx / 3;
+                    let col = idx % 3;
+                    if *has == 1 {
+                        let r = (row + offset.0, -col + offset.1);
+                        Some(r)
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            ShapeDirection::West => self
+                .shape
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, has)| {
+                    let idx = idx as isize;
+                    let row = idx / 3;
+                    let col = idx % 3;
+                    if *has == 1 {
+                        let r = (-col + offset.0, -row + offset.1);
+                        Some(r)
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            ShapeDirection::North => self
+                .shape
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, has)| {
+                    let idx = idx as isize;
+                    let row = idx / 3;
+                    let col = idx % 3;
+                    if *has == 1 {
+                        let r = (-row + offset.0, col + offset.1);
+                        Some(r)
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        }
+    }
+    pub fn new(shape: Vec<usize>) -> Self {
+        Self {
+            shape,
+            bt: (0, 0),
+            button: 0,
+        }
+    }
+}
+
+#[test]
+fn test_get_pos() {
+    let patch = Patch::new(vec![1]);
+    assert_eq!(patch.get_pos((0, 0), ShapeDirection::East), vec![(0, 0)]);
+
+    let patch = Patch::new(vec![1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::East),
+        vec![(0, 0), (1, 0)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::East),
+        vec![(0, 0), (1, 0), (2, 0)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::East),
+        vec![(0, 0), (1, 0), (2, 0), (0, 1)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::South),
+        vec![(0, 0), (0, -1), (0, -2), (1, 0)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::West),
+        vec![(0, 0), (-1, 0), (-2, 0), (0, -1)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((2, 2), ShapeDirection::West),
+        vec![(2, 2), (1, 2), (0, 2), (2, 1)]
+    );
+
+    let patch = Patch::new(vec![1, 1, 1, 1]);
+    assert_eq!(
+        patch.get_pos((0, 0), ShapeDirection::North),
+        vec![(0, 0), (0, 1), (0, 2), (-1, 0)]
+    );
+
 }
 
 pub fn new_patches() -> Vec<Patch> {
@@ -227,7 +353,7 @@ struct PatchComponent {
     pub patch_idx: usize,
 }
 
-fn inner_handle_query_entity_error(e: QueryEntityError) {
+pub fn inner_handle_query_entity_error(e: QueryEntityError) {
     warn!("click choose shape err: {:?}", e);
 }
 
@@ -251,11 +377,18 @@ fn on_click_choose_shape(
     }
 }
 
+#[derive(Component)]
+pub struct ShapeChooseMark {
+    pub patch_idx: usize,
+}
+
 fn spawn_patch(
     commands: &mut Commands,
     idx: usize,
     (patch, x, y): (&Patch, f32, f32),
     root_entity: Entity,
+    shape: Handle<Mesh>,
+    material: Handle<ColorMaterial>,
 ) {
     let square_size = WIDTH_BASE / 5.0;
     let color = Color::linear_rgba(0., 0., 0., 0.);
@@ -263,19 +396,36 @@ fn spawn_patch(
     // 透明sprite用于点选
     let p = commands
         .spawn((
+            // 显示和点击的大小
             Sprite {
                 color,
                 custom_size: Some(Vec2::splat(WIDTH_BASE)),
                 ..default()
             },
+            // 位置
             Transform::from_xyz(x, y, 0.0),
+            // 可点击
             Pickable::default(),
+            // 对应于哪个idx
             PatchComponent { patch_idx: idx },
         ))
         .observe(on_click_choose_shape)
         .id();
 
     commands.entity(root_entity).add_child(p);
+
+    // 在透明Sprite顶部画三角形标注
+    let t = commands
+        .spawn((
+            Mesh2d(shape),
+            // MeshMaterial2d(materials.add(color)),
+            MeshMaterial2d(material),
+            Transform::from_xyz(0.0, WIDTH_BASE / 2.0, 0.1),
+            Visibility::Hidden,
+            ShapeChooseMark { patch_idx: idx },
+        ))
+        .id();
+    commands.entity(p).add_child(t);
 
     // 在透明Sprite上画形状
     for (pos, &has) in patch.shape.iter().enumerate() {
@@ -301,13 +451,26 @@ fn spawn_patch(
 }
 
 // 外面一圈的patches
-pub fn spawn_patches(commands: &mut Commands,patches: &Vec<Patch>, root_entity: Entity) {
+pub fn spawn_patches(
+    commands: &mut Commands,
+    patches: &Vec<Patch>,
+    root_entity: Entity,
+    shape: Handle<Mesh>,
+    material: Handle<ColorMaterial>,
+) {
     // 先设定好各个patches的位置
     // let patches = new_patches();
     let pos = generate_perimeter_positions(patches.len());
 
     // 放置 各个patches
     for (idx, &bevy_egui::egui::Vec2 { x, y }) in pos.iter().enumerate() {
-        spawn_patch(commands, idx, (&patches[idx], x, y), root_entity);
+        spawn_patch(
+            commands,
+            idx,
+            (&patches[idx], x, y),
+            root_entity,
+            shape.clone(),
+            material.clone(),
+        );
     }
 }

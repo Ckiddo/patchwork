@@ -1,14 +1,13 @@
-use bevy::{math::Vec2, prelude::*};
+use bevy::{math::U8Vec2, prelude::*};
 use bevy_egui::{
     EguiContexts, EguiTextureHandle, EguiUserTextures,
     egui::{self, Align2, Id, vec2},
 };
 
 use crate::{
-    game::{HEIGHT, WIDTH, WIDTH_BASE},
+    game::WIDTH_BASE,
     new_game::{
-        chessboard::spawn_chessboard,
-        generate_color, mid_pos,
+        chessboard::{PreSelectDrawer, spawn_chessboard},
         patches::{Patch, new_patches, spawn_patches},
     },
     ui::{HelloUiTextures, get_asset_path, my_button},
@@ -88,6 +87,19 @@ struct Player {
     last_move_tick: usize,
 }
 
+#[derive(Clone)]
+pub enum ShapeDirection {
+    East,
+    South,
+    West,
+    North,
+}
+#[derive(Resource)]
+pub struct InteractiveInfo {
+    pub choosing_shape: Option<usize>,
+    pub choosing_shape_dir: ShapeDirection,
+}
+
 #[derive(Resource)]
 pub struct BoardGame {
     // root component
@@ -118,13 +130,50 @@ pub struct BoardGame {
     button_pos: [usize; 9],
 
     // 拼布的随机初始化
-    patches: Vec<Patch>,
+    pub patches: Vec<Patch>,
+    // 拼布放置的位置
+    patch_pos: Vec<Option<U8Vec2>>,
+    // 拼布占据的格子
+    patch_occ: Vec<Vec<bool>>,
     // 77 板块
 }
 
 impl BoardGame {
+    pub fn can_put(&self, idx: usize, offset: (usize, usize), dir: ShapeDirection) -> bool {
+        // 校验 idx 范围
+        if idx > self.patches.len() {
+            warn!("can put fail: {} > {}", idx, self.patches.len());
+            return false;
+        }
+
+        // 校验是否放置
+        if self.patch_pos[idx].is_some() {
+            warn!("can put fail: {} already put", idx);
+            return false;
+        }
+
+        // 校验交叉
+        let offset = (offset.0 as isize, offset.1 as isize);
+        if self.patches[idx]
+            .get_pos(offset, dir)
+            .iter()
+            .map(|&(x, y)| {
+                if x < 0 || x >= 9 || y < 0 || y >= 9 {
+                    return true;
+                }
+                self.patch_occ[x as usize][y as usize]
+            })
+            .any(|b| b)
+        {
+            warn!("can put fail: cross {}", idx);
+            return false;
+        }
+        return true;
+    }
     pub fn new(e: Entity) -> Self {
+        let patches = new_patches();
         Self {
+            patch_occ: vec![vec![false; 9]; 9],
             root_entity: e,
             board_type: BoardType::Blue,
             time_board_type: TimeBoardType::Square,
@@ -142,10 +191,10 @@ impl BoardGame {
                 },
             ],
             global_move_tick: 2, // move_tick从2开始计数 谁移动了，谁的last move_tick就设置成global move_tick，之后global_move + 1
-            // player: ,
             special_patches: vec![49, 43, 31, 25, 19],
             button_pos: [4, 10, 16, 22, 28, 34, 40, 46, 52],
-            patches: new_patches(),
+            patch_pos: vec![None; patches.len()],
+            patches: patches,
         }
     }
 }
@@ -162,14 +211,22 @@ pub struct ChessBoardProperty {
 // 每次进入game 都初始化一个新的游戏资源
 // 布置sprite 场景
 // 设定好每个sprite 的 事件
-pub fn init_game_resource(mut commands: Commands) {
-    let root_entity = commands.spawn(
-        Transform::from_xyz(0.0, 0.0 ,0.0)
-    ).id();
+pub fn init_game_resource(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let root_entity = commands.spawn(Transform::from_xyz(0.0, 0.0, 0.0)).id();
     let r = BoardGame::new(root_entity);
 
     // 放置patches
-    spawn_patches(&mut commands, &r.patches, root_entity);
+    let shape = meshes.add(Triangle2d::new(
+        bevy::math::vec2(0.0, 0.0),
+        bevy::math::vec2(WIDTH_BASE / 5.0, WIDTH_BASE / 5.0),
+        bevy::math::vec2(-WIDTH_BASE / 5.0, WIDTH_BASE / 5.0),
+    ));
+    let color = materials.add(Color::linear_rgb(0.0, 1.0, 0.0));
+    spawn_patches(&mut commands, &r.patches, root_entity, shape, color);
 
     // 放置棋盘
     let cbp = ChessBoardProperty {
@@ -192,6 +249,15 @@ pub fn init_game_resource(mut commands: Commands) {
     spawn_chessboard(&mut commands, cbp);
 
     commands.insert_resource(r);
+
+    // 前端交互资源
+    commands.insert_resource(InteractiveInfo {
+        choosing_shape: None,
+        choosing_shape_dir: ShapeDirection::East,
+    });
+    // 放置的Component
+    let t = commands.spawn((PreSelectDrawer, Transform::default())).id();
+    commands.entity(root_entity).add_child(t);
 }
 
 pub fn del_game_component(mut commands: Commands, res: Res<BoardGame>) {
