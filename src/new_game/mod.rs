@@ -5,7 +5,7 @@ pub mod event;
 use bevy::prelude::*;
 use bevy_egui::{egui::vec2, EguiPlugin, EguiPrimaryContextPass};
 
-use crate::{game::{HEIGHT, WIDTH}, new_game::game_state::{hello_ui, init_game_resource, load_hello_ui_res, GameState}};
+use crate::{game::{HEIGHT, WIDTH}, new_game::{event::observe_patch_choose_event, game_state::{del_game_component, hello_ui, init_game_resource, load_hello_ui_res, GameState}}};
 
 pub struct NewGamePlug;
 
@@ -36,6 +36,11 @@ impl Plugin for NewGamePlug {
         // 每新开一局就
         // 初始化游戏资源
         app.add_systems(OnEnter(GameState::InGame),init_game_resource);
+        // 删除游戏资源和compnent
+        app.add_systems(OnExit(GameState::InGame), del_game_component);
+
+        // 选中之后的事件
+        app.add_observer(observe_patch_choose_event);
 
     }
 }

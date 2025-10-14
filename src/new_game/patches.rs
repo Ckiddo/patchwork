@@ -4,7 +4,7 @@ use bevy::{ecs::query::QueryEntityError, prelude::*};
 
 use crate::{
     game::WIDTH_BASE,
-    new_game::{generate_color, mid_pos},
+    new_game::{event::PatchChoosedEvent, generate_color, mid_pos},
 };
 
 pub struct Patch {
@@ -224,31 +224,39 @@ pub fn generate_perimeter_positions(n: usize) -> VecDeque<bevy_egui::egui::Vec2>
 // 记载哪个patch的Component
 #[derive(Component)]
 struct PatchComponent {
-    patch_idx: usize,
-}
-
-fn inner_click_pc(pc: &PatchComponent) {
-    info!("on click choose shape: {:?}", pc.patch_idx);
+    pub patch_idx: usize,
 }
 
 fn inner_handle_query_entity_error(e: QueryEntityError) {
     warn!("click choose shape err: {:?}", e);
 }
 
-fn on_click_choose_shape(click: On<Pointer<Click>>, query: Query<&PatchComponent>) {
+fn on_click_choose_shape(
+    click: On<Pointer<Click>>,
+    query: Query<&PatchComponent>,
+    mut commands: Commands,
+) {
     let e = click.event().entity;
     let c = query.get(e);
     match c {
-        Ok(pc) =>{
-            inner_click_pc(pc);
-        },
+        Ok(pc) => {
+            info!("on click choose shape: {:?}", pc.patch_idx);
+            commands.trigger(PatchChoosedEvent {
+                patch_idx: pc.patch_idx,
+            });
+        }
         Err(e) => {
             inner_handle_query_entity_error(e);
         }
     }
 }
 
-fn spawn_patch(commands: &mut Commands, idx: usize, (patch, x, y): (&Patch, f32, f32)) {
+fn spawn_patch(
+    commands: &mut Commands,
+    idx: usize,
+    (patch, x, y): (&Patch, f32, f32),
+    root_entity: Entity,
+) {
     let square_size = WIDTH_BASE / 5.0;
     let color = Color::linear_rgba(0., 0., 0., 0.);
 
@@ -266,6 +274,8 @@ fn spawn_patch(commands: &mut Commands, idx: usize, (patch, x, y): (&Patch, f32,
         ))
         .observe(on_click_choose_shape)
         .id();
+
+    commands.entity(root_entity).add_child(p);
 
     // 在透明Sprite上画形状
     for (pos, &has) in patch.shape.iter().enumerate() {
@@ -291,13 +301,13 @@ fn spawn_patch(commands: &mut Commands, idx: usize, (patch, x, y): (&Patch, f32,
 }
 
 // 外面一圈的patches
-pub fn spawn_patches(commands: &mut Commands) {
+pub fn spawn_patches(commands: &mut Commands,patches: &Vec<Patch>, root_entity: Entity) {
     // 先设定好各个patches的位置
-    let patches = new_patches();
+    // let patches = new_patches();
     let pos = generate_perimeter_positions(patches.len());
 
     // 放置 各个patches
     for (idx, &bevy_egui::egui::Vec2 { x, y }) in pos.iter().enumerate() {
-        spawn_patch(commands, idx, (&patches[idx], x, y));
+        spawn_patch(commands, idx, (&patches[idx], x, y), root_entity);
     }
 }

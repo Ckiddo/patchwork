@@ -89,7 +89,10 @@ struct Player {
 }
 
 #[derive(Resource)]
-struct BoardGame {
+pub struct BoardGame {
+    // root component
+    root_entity: Entity,
+
     // 每个玩家的拼布图版的样式
     board_type: BoardType,
 
@@ -120,8 +123,9 @@ struct BoardGame {
 }
 
 impl BoardGame {
-    pub fn new() -> Self {
+    pub fn new(e: Entity) -> Self {
         Self {
+            root_entity: e,
             board_type: BoardType::Blue,
             time_board_type: TimeBoardType::Square,
             bank_money: 32 + 12 * 5 + 5 * 10 + 1 * 20,
@@ -146,24 +150,52 @@ impl BoardGame {
     }
 }
 
+pub struct ChessBoardProperty {
+    pub root_entity: Entity,
+    pub pos_x: f32,
+    pub pos_y: f32,
+    pub color1: Color,
+    pub color2: Color,
+}
+
 // In game
 // 每次进入game 都初始化一个新的游戏资源
 // 布置sprite 场景
 // 设定好每个sprite 的 事件
 pub fn init_game_resource(mut commands: Commands) {
-    let r = BoardGame::new();
-    commands.insert_resource(r);
+    let root_entity = commands.spawn(
+        Transform::from_xyz(0.0, 0.0 ,0.0)
+    ).id();
+    let r = BoardGame::new(root_entity);
 
     // 放置patches
-    spawn_patches(&mut commands);
+    spawn_patches(&mut commands, &r.patches, root_entity);
 
     // 放置棋盘
-    let color1 = Color::srgb_u8(128, 128, 128);
-    let color2 = Color::srgb_u8(73, 73, 73);
-    spawn_chessboard(&mut commands, 7.0 * 60.0, 0.0, color1, color2);
+    let cbp = ChessBoardProperty {
+        root_entity,
+        pos_x: 7.0 * 60.0,
+        pos_y: 0.0,
+        color1: Color::srgb_u8(128, 128, 128),
+        color2: Color::srgb_u8(73, 73, 73),
+    };
+    spawn_chessboard(&mut commands, cbp);
 
     // 放置棋盘
-    let color1 = Color::srgb_u8(116, 218, 255);
-    let color2 = Color::srgb_u8(78, 208, 255);
-    spawn_chessboard(&mut commands, -7.0 * 60.0, 0.0, color1, color2);
+    let cbp = ChessBoardProperty {
+        root_entity,
+        pos_x: -7.0 * 60.0,
+        pos_y: 0.0,
+        color1: Color::srgb_u8(116, 218, 255),
+        color2: Color::srgb_u8(78, 208, 255),
+    };
+    spawn_chessboard(&mut commands, cbp);
+
+    commands.insert_resource(r);
+}
+
+pub fn del_game_component(mut commands: Commands, res: Res<BoardGame>) {
+    let e = res.root_entity;
+    commands.entity(e).despawn();
+    commands.remove_resource::<BoardGame>();
 }
