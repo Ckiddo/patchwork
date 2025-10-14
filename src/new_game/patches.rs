@@ -7,6 +7,19 @@ use crate::{
     new_game::{event::PatchChoosedEvent, game_state::ShapeDirection, generate_color, mid_pos},
 };
 
+// 展示出的shape对应哪个patch
+#[derive(Component)]
+struct PatchComponent {
+    pub patch_idx: usize,
+}
+
+
+// 绿色三角对应个patch
+#[derive(Component)]
+pub struct ShapeChooseMark {
+    pub patch_idx: usize,
+}
+
 pub struct Patch {
     shape: Vec<usize>,
     bt: (usize, usize),
@@ -347,11 +360,6 @@ pub fn generate_perimeter_positions(n: usize) -> VecDeque<bevy_egui::egui::Vec2>
     ret
 }
 
-// 记载哪个patch的Component
-#[derive(Component)]
-struct PatchComponent {
-    pub patch_idx: usize,
-}
 
 pub fn inner_handle_query_entity_error(e: QueryEntityError) {
     warn!("click choose shape err: {:?}", e);
@@ -377,10 +385,6 @@ fn on_click_choose_shape(
     }
 }
 
-#[derive(Component)]
-pub struct ShapeChooseMark {
-    pub patch_idx: usize,
-}
 
 fn spawn_patch(
     commands: &mut Commands,

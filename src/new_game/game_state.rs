@@ -7,10 +7,10 @@ use bevy_egui::{
 use crate::{
     game::WIDTH_BASE,
     new_game::{
-        chessboard::{PreSelectDrawer, spawn_chessboard},
-        patches::{Patch, new_patches, spawn_patches},
+        chessboard::{spawn_chessboard, BlockInfo, PreSelectDrawer, PutShapeDrawer},
+        patches::{new_patches, spawn_patches, Patch},
     },
-    ui::{HelloUiTextures, get_asset_path, my_button},
+    ui::{get_asset_path, my_button, HelloUiTextures},
 };
 
 // GameState
@@ -20,53 +20,6 @@ pub enum GameState {
     #[default]
     HelloUI,
     InGame,
-}
-
-pub fn load_hello_ui_res(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut egui_textures: ResMut<EguiUserTextures>,
-) {
-    let idle: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_idle.png"));
-    let idle_id = egui_textures.add_image(EguiTextureHandle::Strong(idle));
-
-    let hover: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_hover.png"));
-    let hover_id = egui_textures.add_image(EguiTextureHandle::Strong(hover));
-
-    let click: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_click.png"));
-    let click_id = egui_textures.add_image(EguiTextureHandle::Strong(click));
-    let resource = HelloUiTextures {
-        button_idle: idle_id,
-        button_hover: hover_id,
-        button_click: click_id,
-    };
-    commands.insert_resource(resource);
-}
-
-pub fn hello_ui(
-    mut contexts: EguiContexts,
-    button_res: Res<HelloUiTextures>,
-    mut next_gamestate: ResMut<NextState<GameState>>,
-) -> Result {
-    let ctx = contexts.ctx_mut()?;
-    egui::Area::new(Id::new("hello_ui"))
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-        .show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                let r = my_button(
-                    ui,
-                    "start game",
-                    &button_res.get_textures(),
-                    vec2(WIDTH_BASE, WIDTH_BASE / 2.0),
-                );
-
-                if r.clicked() {
-                    next_gamestate.set(GameState::InGame);
-                }
-            });
-        });
-
-    Ok(())
 }
 
 enum BoardType {
@@ -138,7 +91,38 @@ pub struct BoardGame {
     // 77 板块
 }
 
+
+pub struct ChessBoardProperty {
+    pub root_entity: Entity,
+    pub pos_x: f32,
+    pub pos_y: f32,
+    pub color1: Color,
+    pub color2: Color,
+}
+
 impl BoardGame {
+    pub fn put(&mut self, idx: usize, offset: &BlockInfo, dir: ShapeDirection) {
+        // 中央银行存款要扣除给到 玩家 todo
+        // 玩家存款要根据patch 更新 todo
+
+        // move tick 更新 todo
+        // 导致的特殊布的更新 todo
+
+        // 导致的纽扣更新 todo
+
+        // 拼布放置的位置更新
+        self.patch_pos[idx] = Some(U8Vec2 {
+            x: offset.col as u8,
+            y: offset.row as u8,
+        });
+        // 占据的格子的更新
+        self.patches[idx].get_pos((offset.col as isize, offset.row as isize), dir).iter().for_each(|&(x,y)|{
+            if x < 0 || x >= 9 || y < 0 || y >= 9 {
+                return;
+            }
+            self.patch_occ[x as usize][y as usize] = true;
+        });
+    }
     pub fn can_put(&self, idx: usize, offset: (usize, usize), dir: ShapeDirection) -> bool {
         // 校验 idx 范围
         if idx > self.patches.len() {
@@ -199,14 +183,6 @@ impl BoardGame {
     }
 }
 
-pub struct ChessBoardProperty {
-    pub root_entity: Entity,
-    pub pos_x: f32,
-    pub pos_y: f32,
-    pub color1: Color,
-    pub color2: Color,
-}
-
 // In game
 // 每次进入game 都初始化一个新的游戏资源
 // 布置sprite 场景
@@ -255,8 +231,13 @@ pub fn init_game_resource(
         choosing_shape: None,
         choosing_shape_dir: ShapeDirection::East,
     });
-    // 放置的Component
+
+    // 用于提示放置位置的Component
     let t = commands.spawn((PreSelectDrawer, Transform::default())).id();
+    commands.entity(root_entity).add_child(t);
+    
+    // 已经放置的形状
+    let t = commands.spawn((PutShapeDrawer, Transform::default())).id();
     commands.entity(root_entity).add_child(t);
 }
 
@@ -264,4 +245,52 @@ pub fn del_game_component(mut commands: Commands, res: Res<BoardGame>) {
     let e = res.root_entity;
     commands.entity(e).despawn();
     commands.remove_resource::<BoardGame>();
+}
+
+
+pub fn load_hello_ui_res(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut egui_textures: ResMut<EguiUserTextures>,
+) {
+    let idle: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_idle.png"));
+    let idle_id = egui_textures.add_image(EguiTextureHandle::Strong(idle));
+
+    let hover: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_hover.png"));
+    let hover_id = egui_textures.add_image(EguiTextureHandle::Strong(hover));
+
+    let click: Handle<Image> = asset_server.load(get_asset_path("boarder/boader_click.png"));
+    let click_id = egui_textures.add_image(EguiTextureHandle::Strong(click));
+    let resource = HelloUiTextures {
+        button_idle: idle_id,
+        button_hover: hover_id,
+        button_click: click_id,
+    };
+    commands.insert_resource(resource);
+}
+
+pub fn hello_ui(
+    mut contexts: EguiContexts,
+    button_res: Res<HelloUiTextures>,
+    mut next_gamestate: ResMut<NextState<GameState>>,
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
+    egui::Area::new(Id::new("hello_ui"))
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                let r = my_button(
+                    ui,
+                    "start game",
+                    &button_res.get_textures(),
+                    vec2(WIDTH_BASE, WIDTH_BASE / 2.0),
+                );
+
+                if r.clicked() {
+                    next_gamestate.set(GameState::InGame);
+                }
+            });
+        });
+
+    Ok(())
 }
