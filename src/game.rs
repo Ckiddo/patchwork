@@ -4,7 +4,7 @@ use web_sys::HtmlCanvasElement;
 
 use crate::new_game::NewGamePlug;
 
-pub async fn run_game(canvas: HtmlCanvasElement) {
+pub async fn run_game(canvas: HtmlCanvasElement, token: String) -> Result<(), String>{
     App::new()
         // .register_asset_source("embedded", AssetSourceBuilder::platform_default("asset", None))
         .add_plugins((
@@ -16,16 +16,13 @@ pub async fn run_game(canvas: HtmlCanvasElement) {
                     ..default()
                 }),
                 ..default()
-            }), // 如果你要自己手动放置一个assets文件夹到wasm同级用来拿图片资源，就需要
-                // .set(AssetPlugin {
-                //     meta_check: AssetMetaCheck::Never,
-                //     ..default()
-                // }),
+            }), 
         ))
         .add_plugins(NewGamePlug)
         .add_systems(Startup, setup_camera)
         .add_systems(Update, update_camera_projection)
         .run();
+    Ok(())
 }
 
 pub const WIDTH_BASE: f32 = 100.0;

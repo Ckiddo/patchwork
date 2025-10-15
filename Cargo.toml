@@ -1,16 +1,25 @@
+[workspace]
+members = ["backend", "util_lib"]
 [package]
 name = "patchwork"
 version = "0.1.0"
 edition = "2024"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-# getrandom = { version = "0.3.3", features = ["wasm_js"] }
-getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }
+getrandom = { version = "0.3.3", default-features = false, features = [
+    "wasm_js",
+] }
 
 [dependencies]
+base64 = "0.22.1"
 bevy = "0.17.2"
 bevy_egui = "0.37.0"
 bevy_embedded_assets = "0.14.0"
+reqwest = "0.12.24"
+serde = "1.0.228"
+serde-wasm-bindgen = "0.6.5"
+serde_json = "1.0.145"
+wasm-bindgen = "0.2.104"
 wasm-bindgen-futures = "0.4.54"
 web-sys = { version = "0.3.81", features = [
     "Window",
@@ -19,12 +28,13 @@ web-sys = { version = "0.3.81", features = [
     "Element",
 ] }
 yew = { version = "0.21.0", features = ["csr"] }
+util_lib ={ path = "util_lib"}
 
 
 [profile.release]
 # lto = "thin"   # 或者 "fat"（更小但编译更慢）
-lto = "fat"   # 或者 "fat"（更小但编译更慢）
+lto = "fat"       # 或者 "fat"（更小但编译更慢）
 codegen-units = 1
 strip = "symbols" # 或者 "debuginfo" 以去掉调试信息
-opt-level = "z"  # 最高压缩优化（可能会影响性能）
-panic = "abort"  # 减少 panic 相关代码
+opt-level = "z"   # 最高压缩优化（可能会影响性能）
+panic = "abort"   # 减少 panic 相关代码
