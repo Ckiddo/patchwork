@@ -4,17 +4,16 @@ use wasm_bindgen::prelude::*;
 use web_sys::{Storage, window};
 use yew::{Callback, Html, function_component, html, use_node_ref, use_state};
 
-pub fn base_url() -> &'static str {
+pub fn jwt_base_url() -> &'static str {
     let base_url = if cfg!(debug_assertions) {
-        "http://127.0.0.1:5380"
+        "http://127.0.0.1:8000/api"
     } else {
-        "http://www.ckiddo.com:5380"
+        "https://patchwork-backent-wbar.shuttle.app/api"
     };
     base_url
 }
 
 const JWT_STORAGE_KEY: &str = "game_jwt_token";
-const API_BASE_URL: &str = "http://localhost:5380/api";
 
 #[derive(Clone, Serialize, Deserialize)]
 struct JwtRsp {
@@ -369,7 +368,7 @@ pub struct VerifyRsp {
 async fn request_verify(jwt: &String) -> Result<VerifyRsp, String> {
     let window = window().ok_or("无法获取window对象")?;
 
-    let url = format!("{}/auth/verify", API_BASE_URL);
+    let url = format!("{}/auth/verify", jwt_base_url());
 
     let opts = web_sys::RequestInit::new();
     opts.set_method("POST");
@@ -411,7 +410,7 @@ async fn request_verify(jwt: &String) -> Result<VerifyRsp, String> {
 async fn request_new_jwt() -> Result<JwtRsp, String> {
     let window = window().ok_or("无法获取window对象")?;
 
-    let url = format!("{}/auth/create", API_BASE_URL);
+    let url = format!("{}/auth/create", jwt_base_url());
 
     let opts = web_sys::RequestInit::new();
     opts.set_method("POST");

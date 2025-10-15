@@ -416,6 +416,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "shuttle-axum",
  "shuttle-runtime",
  "tokio",
  "tower",
@@ -6204,6 +6205,16 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "url",
+]
+
+[[package]]
+name = "shuttle-axum"
+version = "0.57.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8689ba948b46f56ba52ac6fcbd68cd07807e79a5f6b1e2bf35c4be1d1eaf4620"
+dependencies = [
+ "axum",
+ "shuttle-runtime",
 ]
 
 [[package]]

@@ -9,12 +9,15 @@ use axum::{
 };
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use reqwest::{Method, StatusCode};
-use serde::{Serialize};
+use serde::Serialize;
 use tower_http::cors::{Any, CorsLayer};
 use util_lib::{Claims, UserIdentity};
 use uuid::Uuid;
 
-use crate::api::auth::{create::CreateRsp, update::{UpdateNicknameReq, UpdateRsp}};
+use crate::api::auth::{
+    create::CreateRsp,
+    update::{UpdateNicknameReq, UpdateRsp},
+};
 
 // 应用状态
 #[derive(Clone)]
@@ -27,7 +30,6 @@ impl AppState {
         Self { jwt_secret }
     }
 }
-
 
 // 验证响应
 #[derive(Serialize)]
@@ -213,11 +215,13 @@ fn extract_and_verify_jwt(
     Ok(token_data.claims)
 }
 
-#[tokio::main]
-async fn main() {
+#[shuttle_runtime::main]
+async fn main(
+    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
+) -> shuttle_axum::ShuttleAxum {
     // 从环境变量或配置文件读取 JWT secret
-    let jwt_secret = std::env::var("JWT_SECRET")
-        .expect("fail to load JWT_SECRET");
+    
+    let jwt_secret = secrets.get("JWT_SECRET").expect("fail to load JWT_SECRET");
 
     let state = Arc::new(AppState::new(jwt_secret));
 
@@ -225,6 +229,7 @@ async fn main() {
         .allow_origin([
             "http://127.0.0.1:8080".parse().unwrap(),
             "http://localhost:8080".parse().unwrap(),
+            "https://ckiddo.github.io/patchwork/".parse().unwrap(),
         ])
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
@@ -234,7 +239,32 @@ async fn main() {
         .with_state(state)
         .layer(cors);
 
-    // 启动
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:5380").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    Ok(app.into())
 }
+
+// #[tokio::main]
+// async fn main() {
+//     // 从环境变量或配置文件读取 JWT secret
+//     let jwt_secret = std::env::var("JWT_SECRET")
+//         .expect("fail to load JWT_SECRET");
+
+//     let state = Arc::new(AppState::new(jwt_secret));
+
+//     let cors = CorsLayer::new()
+//         .allow_origin([
+//             "http://127.0.0.1:8080".parse().unwrap(),
+//             "http://localhost:8080".parse().unwrap(),
+//             "https://ckiddo.github.io/patchwork/".parse().unwrap(),
+//         ])
+//         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+//         .allow_headers(Any);
+
+//     let app = Router::new()
+//         .merge(auth_routes())
+//         .with_state(state)
+//         .layer(cors);
+
+//     // 启动
+//     let listener = tokio::net::TcpListener::bind("0.0.0.0:5380").await.unwrap();
+//     axum::serve(listener, app).await.unwrap();
+// }
