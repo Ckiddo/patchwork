@@ -226,14 +226,14 @@
 
 ## 9. Cloudflare 中转与上线验收（P0，依赖阶段 7/8）
 
-- [ ] T49 选定账号内 API 子域名、建立命名 Tunnel，安装/配置 cloudflared，自启后指向 `127.0.0.1:18120`。
-- [ ] T50 核对 API 不缓存、WSS 升级和 Origin；数据库/管理端点不发布，日志不包含认证消息。
-- [ ] T51 将前端 API/WSS 地址改为构建配置，公网后端验收通过后更新 GitHub Pages 正式构建。
+- [x] T49 选定账号内 API 子域名、建立命名 Tunnel，安装/配置 cloudflared，自启后指向 `127.0.0.1:18120`。
+- [x] T50 核对 API 不缓存、WSS 升级和 Origin；数据库/管理端点不发布，日志不包含认证消息。
+- [x] T51 将前端 API/WSS 地址改为构建配置，公网后端验收通过后更新 GitHub Pages 正式构建。
 - [ ] T52 双浏览器完整验收好友房、开局、动作、结算、断线、后端重启；记录程序哈希、PID、监听、数据库和任务证据。FIFO 匹配在阶段 6 恢复开发后另行验收，不阻塞首版好友房对局上线。
 - [x] T53 压测初始目标 100 连接/50 房间，记录 p95、CPU、内存、池等待/锁等待与故障恢复，不把目标写成实测值。
 - [x] T54 记录部署版本、PostgreSQL/schema 版本、备份位置、回滚步骤和未解决事项，更新文档勾选状态。
 
-2026-09-15 阶段 9 部分完成：5.9 已安装 cloudflared 2026.9.1，官方哈希、API-only ingress 离线规则及两个 Cloudflare 入口 TCP 7844 检查通过。Cloudflare 账号已授权，命名 Tunnel `patchwork-prod`（UUID `4784d7e1-2968-4b9e-b098-92804b85b3b8`）已确认，JSON 凭据已安全写入远端受保护目录。已备好命名 Tunnel 的配置、自启/启停和只读公网探测脚本。Pages/本地 Trunk 构建已显式指定 `assets`，发布 workflow 与公网探测共用 API 地址校验，并完成本地 WASM release 构建。实际 API 域名/DNS、连接器启动、仓库 `PATCHWORK_API_BASE` 和 Pages 新构建未配置；T49–T52 仍待域名确定后完成。
+2026-09-16 阶段 9 部分完成：5.9 已安装 cloudflared 2026.9.1，官方哈希、API-only ingress 离线规则及两个 Cloudflare 入口 TCP 7844 检查通过。Cloudflare 账号已授权，命名 Tunnel `patchwork-prod`（UUID `4784d7e1-2968-4b9e-b098-92804b85b3b8`）已确认，`api.ckiddo.fun` DNS 路由、API-only ingress、`PatchworkTunnel` 开机任务和连接器均已上线。只读公网探测通过 HTTPS/CORS/缓存/404/WSS/错误 Origin 与查询参数拒绝。仓库 Actions 变量 `PATCHWORK_API_BASE=https://api.ckiddo.fun/api` 已配置，提交 `1b10094` 的 Pages 构建已成功发布，WASM 资源包含生产 API 地址。T49–T51 完成；T52 仍待浏览器工具恢复后进行双浏览器完整对局验收。
 
 T53 在远端独立库实测 100 条同时鉴权连接、50 局全部结束、2,950 次行动、业务错误 0；强制重启后全部恢复，行动 p95 98.13 ms，后端工作集峰值 21.59 MiB。发现并修复跨房间在线状态变化误拒绝行动、退出无限等待，以及采样日志干扰负载的问题。池获取 p95 49.80 ms；Lock 非零采样 0、LWLock 4、死锁增加 0。链路为 **SSH 转发，不包含 Cloudflare 与浏览器渲染**，不外推长期容量。
 
