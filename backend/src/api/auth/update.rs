@@ -11,6 +11,5 @@ pub struct UpdateNicknameReq {
 #[derive(Serialize)]
 pub struct UpdateRsp {
     pub jwt: String,
-    pub identity:UserIdentity,
+    pub identity: UserIdentity,
 }
-

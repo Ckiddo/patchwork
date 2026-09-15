@@ -7,10 +7,10 @@ use bevy_egui::{
 use crate::{
     game::WIDTH_BASE,
     new_game::{
-        chessboard::{spawn_chessboard, BlockInfo, PreSelectDrawer, PutShapeDrawer},
-        patches::{new_patches, spawn_patches, Patch},
+        chessboard::{BlockInfo, PreSelectDrawer, PutShapeDrawer, spawn_chessboard},
+        patches::{Patch, new_patches, spawn_patches},
     },
-    ui::{get_asset_path, my_button, HelloUiTextures},
+    ui::{HelloUiTextures, get_asset_path, my_button},
 };
 
 // GameState
@@ -91,7 +91,6 @@ pub struct BoardGame {
     // 77 板块
 }
 
-
 pub struct ChessBoardProperty {
     pub root_entity: Entity,
     pub pos_x: f32,
@@ -102,6 +101,10 @@ pub struct ChessBoardProperty {
 
 impl BoardGame {
     pub fn put(&mut self, idx: usize, offset: &BlockInfo, dir: ShapeDirection) {
+        // Even direct callers must validate before changing either placement or occupancy.
+        if !self.can_put(idx, (offset.col, offset.row), dir.clone()) {
+            return;
+        }
         // 中央银行存款要扣除给到 玩家 todo
         // 玩家存款要根据patch 更新 todo
 
@@ -116,29 +119,37 @@ impl BoardGame {
             y: offset.row as u8,
         });
         // 占据的格子的更新
-        self.patches[idx].get_pos((offset.col as isize, offset.row as isize), dir).iter().for_each(|&(x,y)|{
-            if x < 0 || x >= 9 || y < 0 || y >= 9 {
-                return;
-            }
-            self.patch_occ[x as usize][y as usize] = true;
-        });
+        self.patches[idx]
+            .get_pos((offset.col as isize, offset.row as isize), dir)
+            .iter()
+            .for_each(|&(x, y)| {
+                if x < 0 || x >= 9 || y < 0 || y >= 9 {
+                    return;
+                }
+                self.patch_occ[x as usize][y as usize] = true;
+            });
     }
     pub fn can_put(&self, idx: usize, offset: (usize, usize), dir: ShapeDirection) -> bool {
         // 校验 idx 范围
-        if idx > self.patches.len() {
-            warn!("can put fail: {} > {}", idx, self.patches.len());
+        let Some(patch) = self.patches.get(idx) else {
+            return false;
+        };
+        let Some(position) = self.patch_pos.get(idx) else {
+            return false;
+        };
+        if offset.0 >= 9 || offset.1 >= 9 {
             return false;
         }
 
         // 校验是否放置
-        if self.patch_pos[idx].is_some() {
+        if position.is_some() {
             warn!("can put fail: {} already put", idx);
             return false;
         }
 
         // 校验交叉
         let offset = (offset.0 as isize, offset.1 as isize);
-        if self.patches[idx]
+        if patch
             .get_pos(offset, dir)
             .iter()
             .map(|&(x, y)| {
@@ -235,7 +246,7 @@ pub fn init_game_resource(
     // 用于提示放置位置的Component
     let t = commands.spawn((PreSelectDrawer, Transform::default())).id();
     commands.entity(root_entity).add_child(t);
-    
+
     // 已经放置的形状
     let t = commands.spawn((PutShapeDrawer, Transform::default())).id();
     commands.entity(root_entity).add_child(t);
@@ -246,7 +257,6 @@ pub fn del_game_component(mut commands: Commands, res: Res<BoardGame>) {
     commands.entity(e).despawn();
     commands.remove_resource::<BoardGame>();
 }
-
 
 pub fn load_hello_ui_res(
     mut commands: Commands,

@@ -35,3 +35,13 @@ Secrets.dev.toml
 Shuttle.toml
 .shuttle*
 Secrets*.toml
+
+# Local server configuration, credentials and test artifacts
+**/secrets/
+backend/config.local.toml
+.env
+.env.*
+!.env.example
+/artifacts/
+**/__pycache__/
+*.pyc

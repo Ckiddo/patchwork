@@ -1,0 +1,264 @@
+{
+  "excluded": 27,
+  "area": 158,
+  "pieces": [
+    {
+      "id": 1,
+      "x": 0,
+      "y": 0,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 10,
+      "x": 0,
+      "y": 1,
+      "turns": 1,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 3,
+      "x": 0,
+      "y": 3,
+      "turns": 1,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 4,
+      "x": 0,
+      "y": 5,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 5,
+      "x": 2,
+      "y": 4,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 8,
+      "x": 1,
+      "y": 7,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 2,
+      "x": 2,
+      "y": 5,
+      "turns": 1,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 17,
+      "x": 3,
+      "y": 7,
+      "turns": 1,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 7,
+      "x": 7,
+      "y": 5,
+      "turns": 0,
+      "flipped": true,
+      "seat": 0
+    },
+    {
+      "id": 11,
+      "x": 6,
+      "y": 5,
+      "turns": 2,
+      "flipped": true,
+      "seat": 0
+    },
+    {
+      "id": 15,
+      "x": 6,
+      "y": 3,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 13,
+      "x": 4,
+      "y": 2,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 9,
+      "x": 2,
+      "y": 1,
+      "turns": 0,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 19,
+      "x": 2,
+      "y": 0,
+      "turns": 3,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 16,
+      "x": 7,
+      "y": 0,
+      "turns": 2,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "id": 20,
+      "x": 6,
+      "y": 0,
+      "turns": 3,
+      "flipped": false,
+      "seat": 0
+    },
+    {
+      "seat": 1,
+      "id": 6,
+      "x": 0,
+      "y": 0,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 12,
+      "x": 4,
+      "y": 5,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 14,
+      "x": 1,
+      "y": 4,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 18,
+      "x": 4,
+      "y": 3,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 21,
+      "x": 0,
+      "y": 3,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 22,
+      "x": 4,
+      "y": 2,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 23,
+      "x": 3,
+      "y": 1,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 24,
+      "x": 3,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 25,
+      "x": 7,
+      "y": 1,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 26,
+      "x": 0,
+      "y": 6,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 28,
+      "x": 7,
+      "y": 5,
+      "turns": 0,
+      "flipped": true
+    },
+    {
+      "seat": 1,
+      "id": 29,
+      "x": 1,
+      "y": 2,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 30,
+      "x": 1,
+      "y": 8,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 31,
+      "x": 2,
+      "y": 6,
+      "turns": 2,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 32,
+      "x": 6,
+      "y": 7,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "seat": 1,
+      "id": 33,
+      "x": 6,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    }
+  ],
+  "solver": "OPTIMAL",
+  "seconds": 5.518500700000001
+}

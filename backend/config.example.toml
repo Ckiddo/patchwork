@@ -1,0 +1,34 @@
+# Relative secret paths resolve against THIS file, not the process working directory.
+listen = "127.0.0.1:8000"
+jwt_secret_file = "secrets/jwt.key"
+allowed_origins = ["http://localhost:8080", "http://127.0.0.1:8080", "https://ckiddo.github.io"]
+workers = 2
+shutdown_timeout_secs = 10
+# Optional, local administrator-controlled graceful shutdown signal for deployment.
+# shutdown_signal_file = "../control/backend.stop"
+log_level = "info"
+
+[auth]
+allow_legacy_migration = false
+websocket_auth_timeout_secs = 5
+
+[recovery]
+waiting_grace_secs = 60
+game_budget_secs = 120
+both_offline_retention_secs = 600
+restart_grace_secs = 120
+
+# Enable after provisioning roles and running patchwork-migrate with a separate config.
+# [database]
+# host = "127.0.0.1"
+# port = 15432
+# name = "patchwork"
+# user = "patchwork_app"
+# password_file = "secrets/postgres-app.key"
+# min_connections = 1
+# max_connections = 8
+# log_pool_acquire = false # temporary duration-only telemetry for isolated load tests
+# acquire_timeout_ms = 3000
+# lock_timeout_ms = 2000
+# statement_timeout_ms = 5000
+# idle_transaction_timeout_ms = 10000

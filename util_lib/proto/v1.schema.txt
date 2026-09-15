@@ -1,0 +1,153 @@
+Acknowledged.game_version tag=2 type=Uint64: label=Optional oneof=- optional=false
+Acknowledged.room_version tag=1 type=Uint64: label=Optional oneof=- optional=false
+Authenticate.access_token tag=1 type=String: label=Optional oneof=- optional=false
+Authenticated.generation tag=2 type=Uint64: label=Optional oneof=- optional=false
+Authenticated.user_id tag=1 type=String: label=Optional oneof=- optional=false
+BoardPosition.x tag=1 type=Sint32: label=Optional oneof=- optional=false
+BoardPosition.y tag=2 type=Sint32: label=Optional oneof=- optional=false
+ClientEnvelope.authenticate tag=10 type=Message:.patchwork.v1.Authenticate label=Optional oneof=payload optional=false
+ClientEnvelope.game tag=14 type=Message:.patchwork.v1.GameRequest label=Optional oneof=payload optional=false
+ClientEnvelope.lobby tag=12 type=Message:.patchwork.v1.LobbyRequest label=Optional oneof=payload optional=false
+ClientEnvelope.matchmaking tag=13 type=Message:.patchwork.v1.MatchRequest label=Optional oneof=payload optional=false
+ClientEnvelope.ping tag=11 type=Message:.patchwork.v1.Ping label=Optional oneof=payload optional=false
+ClientEnvelope.protocol_version tag=1 type=Uint32: label=Optional oneof=- optional=false
+ClientEnvelope.request_id tag=2 type=String: label=Optional oneof=- optional=false
+ClientEnvelope.resume tag=15 type=Message:.patchwork.v1.ResumeRequest label=Optional oneof=payload optional=false
+ClientEnvelope.sync_ack tag=16 type=Message:.patchwork.v1.SyncAck label=Optional oneof=payload optional=false
+CreateRoom.mode tag=1 type=String: label=Optional oneof=- optional=false
+CreateRoom.password tag=3 type=String: label=Optional oneof=_password optional=true
+CreateRoom.rules_version tag=2 type=String: label=Optional oneof=- optional=false
+Empty empty
+ErrorCode.ERROR_CODE_ALREADY_MATCHED=12
+ErrorCode.ERROR_CODE_BAD_PASSWORD=19
+ErrorCode.ERROR_CODE_FORBIDDEN=15
+ErrorCode.ERROR_CODE_GAME_NOT_RUNNING=22
+ErrorCode.ERROR_CODE_INSUFFICIENT_BUTTONS=25
+ErrorCode.ERROR_CODE_INVALID_PLACEMENT=24
+ErrorCode.ERROR_CODE_INVALID_REQUEST=4
+ErrorCode.ERROR_CODE_MALFORMED_MESSAGE=1
+ErrorCode.ERROR_CODE_MESSAGE_TOO_LARGE=3
+ErrorCode.ERROR_CODE_NOT_ENOUGH_PLAYERS=9
+ErrorCode.ERROR_CODE_NOT_FOUND=16
+ErrorCode.ERROR_CODE_NOT_IMPLEMENTED=6
+ErrorCode.ERROR_CODE_NOT_READY=17
+ErrorCode.ERROR_CODE_NOT_YOUR_TURN=23
+ErrorCode.ERROR_CODE_PLAYER_BUSY=18
+ErrorCode.ERROR_CODE_RATE_LIMITED=21
+ErrorCode.ERROR_CODE_REQUEST_ID_CONFLICT=11
+ErrorCode.ERROR_CODE_ROOM_FULL=7
+ErrorCode.ERROR_CODE_ROOM_NOT_JOINABLE=8
+ErrorCode.ERROR_CODE_SERVER_RESTARTED=14
+ErrorCode.ERROR_CODE_SERVICE_UNAVAILABLE=13
+ErrorCode.ERROR_CODE_SYNC_REQUIRED=20
+ErrorCode.ERROR_CODE_UNAUTHENTICATED=5
+ErrorCode.ERROR_CODE_UNSPECIFIED=0
+ErrorCode.ERROR_CODE_UNSUPPORTED_VERSION=2
+ErrorCode.ERROR_CODE_VERSION_CONFLICT=10
+ErrorCode.ERROR_CODE_WRONG_ACTION_PHASE=26
+ErrorResponse.code tag=1 type=Enum:.patchwork.v1.ErrorCode label=Optional oneof=- optional=false
+ErrorResponse.retryable tag=2 type=Bool: label=Optional oneof=- optional=false
+GameEvent.payload_json tag=3 type=Bytes: label=Optional oneof=- optional=false
+GameEvent.seq tag=1 type=Uint64: label=Optional oneof=- optional=false
+GameEvent.version tag=2 type=Uint64: label=Optional oneof=- optional=false
+GameRequest.advance tag=10 type=Message:.patchwork.v1.Empty label=Optional oneof=action optional=false
+GameRequest.buy_and_place tag=11 type=Message:.patchwork.v1.PlacePatch label=Optional oneof=action optional=false
+GameRequest.expected_version tag=2 type=Uint64: label=Optional oneof=- optional=false
+GameRequest.game_id tag=1 type=String: label=Optional oneof=- optional=false
+GameRequest.place_special_patch tag=12 type=Message:.patchwork.v1.BoardPosition label=Optional oneof=action optional=false
+GameRequest.resign tag=13 type=Message:.patchwork.v1.Empty label=Optional oneof=action optional=false
+GameSnapshot.event_seq tag=3 type=Uint64: label=Optional oneof=- optional=false
+GameSnapshot.game_id tag=1 type=String: label=Optional oneof=- optional=false
+GameSnapshot.phase tag=6 type=String: label=Optional oneof=- optional=false
+GameSnapshot.rules_version tag=4 type=String: label=Optional oneof=- optional=false
+GameSnapshot.state_json tag=5 type=Bytes: label=Optional oneof=- optional=false
+GameSnapshot.version tag=2 type=Uint64: label=Optional oneof=- optional=false
+JoinQueue.mode tag=1 type=String: label=Optional oneof=- optional=false
+JoinQueue.rules_version tag=2 type=String: label=Optional oneof=- optional=false
+JoinRoom.code tag=1 type=String: label=Optional oneof=- optional=false
+JoinRoom.password tag=2 type=String: label=Optional oneof=_password optional=true
+ListRooms.cursor tag=1 type=String: label=Optional oneof=- optional=false
+ListRooms.limit tag=2 type=Uint32: label=Optional oneof=- optional=false
+LobbyRequest.create tag=10 type=Message:.patchwork.v1.CreateRoom label=Optional oneof=command optional=false
+LobbyRequest.expected_version tag=2 type=Uint64: label=Optional oneof=- optional=false
+LobbyRequest.get tag=16 type=Message:.patchwork.v1.Empty label=Optional oneof=command optional=false
+LobbyRequest.join tag=11 type=Message:.patchwork.v1.JoinRoom label=Optional oneof=command optional=false
+LobbyRequest.leave tag=12 type=Message:.patchwork.v1.Empty label=Optional oneof=command optional=false
+LobbyRequest.list tag=15 type=Message:.patchwork.v1.ListRooms label=Optional oneof=command optional=false
+LobbyRequest.room_id tag=1 type=String: label=Optional oneof=- optional=false
+LobbyRequest.set_ready tag=13 type=Message:.patchwork.v1.SetReady label=Optional oneof=command optional=false
+LobbyRequest.set_rules tag=17 type=Message:.patchwork.v1.SetRules label=Optional oneof=command optional=false
+LobbyRequest.start tag=14 type=Message:.patchwork.v1.Empty label=Optional oneof=command optional=false
+MatchPhase.MATCH_PHASE_CANCELLED=4
+MatchPhase.MATCH_PHASE_EXPIRED=5
+MatchPhase.MATCH_PHASE_MATCHED=3
+MatchPhase.MATCH_PHASE_QUEUED=1
+MatchPhase.MATCH_PHASE_RESERVED=2
+MatchPhase.MATCH_PHASE_UNSPECIFIED=0
+MatchRequest.cancel tag=11 type=Message:.patchwork.v1.TicketRef label=Optional oneof=command optional=false
+MatchRequest.confirm tag=13 type=Message:.patchwork.v1.TicketRef label=Optional oneof=command optional=false
+MatchRequest.get tag=12 type=Message:.patchwork.v1.TicketRef label=Optional oneof=command optional=false
+MatchRequest.join tag=10 type=Message:.patchwork.v1.JoinQueue label=Optional oneof=command optional=false
+MatchStatus.phase tag=2 type=Enum:.patchwork.v1.MatchPhase label=Optional oneof=- optional=false
+MatchStatus.room_id tag=3 type=String: label=Optional oneof=- optional=false
+MatchStatus.ticket_id tag=1 type=String: label=Optional oneof=- optional=false
+Ping.nonce tag=1 type=Uint64: label=Optional oneof=- optional=false
+PlacePatch.flipped tag=4 type=Bool: label=Optional oneof=- optional=false
+PlacePatch.patch_id tag=1 type=String: label=Optional oneof=- optional=false
+PlacePatch.position tag=2 type=Message:.patchwork.v1.BoardPosition label=Optional oneof=- optional=false
+PlacePatch.quarter_turns tag=3 type=Uint32: label=Optional oneof=- optional=false
+Pong.nonce tag=1 type=Uint64: label=Optional oneof=- optional=false
+ResumeRequest.game_id tag=1 type=String: label=Optional oneof=- optional=false
+ResumeRequest.has_snapshot tag=3 type=Bool: label=Optional oneof=- optional=false
+ResumeRequest.last_seq tag=2 type=Uint64: label=Optional oneof=- optional=false
+ResumeState.event_seq tag=3 type=Uint64: label=Optional oneof=- optional=false
+ResumeState.events tag=6 type=Message:.patchwork.v1.GameEvent label=Repeated oneof=- optional=false
+ResumeState.game_id tag=1 type=String: label=Optional oneof=- optional=false
+ResumeState.phase tag=7 type=String: label=Optional oneof=- optional=false
+ResumeState.snapshot tag=5 type=Message:.patchwork.v1.GameSnapshot label=Optional oneof=- optional=false
+ResumeState.sync_token tag=4 type=String: label=Optional oneof=- optional=false
+ResumeState.version tag=2 type=Uint64: label=Optional oneof=- optional=false
+RoomList.next_cursor tag=2 type=String: label=Optional oneof=- optional=false
+RoomList.rooms tag=1 type=Message:.patchwork.v1.RoomSnapshot label=Repeated oneof=- optional=false
+RoomMember.connected tag=4 type=Bool: label=Optional oneof=- optional=false
+RoomMember.nickname tag=5 type=String: label=Optional oneof=- optional=false
+RoomMember.ready tag=3 type=Bool: label=Optional oneof=- optional=false
+RoomMember.seat tag=2 type=Uint32: label=Optional oneof=- optional=false
+RoomMember.user_id tag=1 type=String: label=Optional oneof=- optional=false
+RoomPhase.ROOM_PHASE_CLOSED=5
+RoomPhase.ROOM_PHASE_FINISHED=4
+RoomPhase.ROOM_PHASE_PLAYING=3
+RoomPhase.ROOM_PHASE_STARTING=2
+RoomPhase.ROOM_PHASE_UNSPECIFIED=0
+RoomPhase.ROOM_PHASE_WAITING=1
+RoomSnapshot.code tag=8 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.first_player_seat tag=11 type=Uint32: label=Optional oneof=_first_player_seat optional=true
+RoomSnapshot.game_id tag=7 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.members tag=4 type=Message:.patchwork.v1.RoomMember label=Repeated oneof=- optional=false
+RoomSnapshot.mode tag=9 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.owner_id tag=5 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.phase tag=3 type=Enum:.patchwork.v1.RoomPhase label=Optional oneof=- optional=false
+RoomSnapshot.requires_password tag=10 type=Bool: label=Optional oneof=- optional=false
+RoomSnapshot.room_id tag=1 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.rules_version tag=6 type=String: label=Optional oneof=- optional=false
+RoomSnapshot.version tag=2 type=Uint64: label=Optional oneof=- optional=false
+ServerEnvelope.acknowledged tag=11 type=Message:.patchwork.v1.Acknowledged label=Optional oneof=payload optional=false
+ServerEnvelope.authenticated tag=16 type=Message:.patchwork.v1.Authenticated label=Optional oneof=payload optional=false
+ServerEnvelope.error tag=10 type=Message:.patchwork.v1.ErrorResponse label=Optional oneof=payload optional=false
+ServerEnvelope.event_seq tag=3 type=Uint64: label=Optional oneof=- optional=false
+ServerEnvelope.game tag=14 type=Message:.patchwork.v1.GameSnapshot label=Optional oneof=payload optional=false
+ServerEnvelope.matchmaking tag=13 type=Message:.patchwork.v1.MatchStatus label=Optional oneof=payload optional=false
+ServerEnvelope.pong tag=15 type=Message:.patchwork.v1.Pong label=Optional oneof=payload optional=false
+ServerEnvelope.protocol_version tag=1 type=Uint32: label=Optional oneof=- optional=false
+ServerEnvelope.request_id tag=2 type=String: label=Optional oneof=_request_id optional=true
+ServerEnvelope.resumed tag=18 type=Message:.patchwork.v1.ResumeState label=Optional oneof=payload optional=false
+ServerEnvelope.room tag=12 type=Message:.patchwork.v1.RoomSnapshot label=Optional oneof=payload optional=false
+ServerEnvelope.rooms tag=17 type=Message:.patchwork.v1.RoomList label=Optional oneof=payload optional=false
+SetReady.ready tag=1 type=Bool: label=Optional oneof=- optional=false
+SetRules.rules_version tag=1 type=String: label=Optional oneof=- optional=false
+SyncAck.event_seq tag=3 type=Uint64: label=Optional oneof=- optional=false
+SyncAck.game_id tag=1 type=String: label=Optional oneof=- optional=false
+SyncAck.sync_token tag=4 type=String: label=Optional oneof=- optional=false
+SyncAck.version tag=2 type=Uint64: label=Optional oneof=- optional=false
+TicketRef.ticket_id tag=1 type=String: label=Optional oneof=- optional=false
+package patchwork.v1 syntax proto3

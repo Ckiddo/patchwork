@@ -1,270 +1,94 @@
-pub mod api;
-use std::sync::Arc;
+use actix::Actor;
+use actix_web::{App, HttpServer, dev::Service, middleware::DefaultHeaders, web};
+use backend::{AppState, api, audit, config::Config, game::LobbyManager, instance::InstanceGuard};
+use std::{io, net::TcpListener};
 
-use axum::{
-    Json, Router,
-    extract::State,
-    http::HeaderMap,
-    routing::{post, put},
-};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use reqwest::{Method, StatusCode};
-use serde::Serialize;
-use tower_http::cors::{Any, CorsLayer};
-use util_lib::{Claims, UserIdentity};
-use uuid::Uuid;
-
-use crate::api::auth::{
-    create::CreateRsp,
-    update::{UpdateNicknameReq, UpdateRsp},
-};
-
-// 应用状态
-#[derive(Clone)]
-pub struct AppState {
-    jwt_secret: String,
-}
-
-impl AppState {
-    pub fn new(jwt_secret: String) -> Self {
-        Self { jwt_secret }
+#[actix_web::main]
+async fn main() -> io::Result<()> {
+    let mut args = std::env::args_os().skip(1);
+    let config_path = match (args.next(), args.next(), args.next()) {
+        (Some(flag), Some(path), None) if flag == "--config" => path,
+        _ => {
+            eprintln!("usage: patchwork-server --config <path-to-config.toml>");
+            std::process::exit(2);
+        }
+    };
+    let config = Config::load(std::path::Path::new(&config_path))
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+    audit::init(&config.log_level);
+    let _instance = InstanceGuard::acquire()?;
+    let secret = config.load_jwt_secret()?;
+    let lobby = LobbyManager::default().start();
+    let mut state = AppState::new(&secret, lobby)
+        .with_auth(config.auth.clone(), config.allowed_origins.clone())
+        .with_recovery(config.recovery.clone());
+    let database = if let Some(db_config) = &config.database {
+        let db = backend::persistence::Database::connect(db_config)
+            .await
+            .map_err(io::Error::other)?;
+        db.check_runtime_role().await.map_err(io::Error::other)?;
+        db.check_schema().await.map_err(io::Error::other)?;
+        state = state.with_database(db.clone());
+        Some(db)
+    } else {
+        None
+    };
+    let state = web::Data::new(state);
+    let listener = TcpListener::bind(config.listen)?;
+    tracing::info!(target: "patchwork_audit", event = "listening", address = %listener.local_addr()?, database_configured = database.is_some());
+    let origins = config.allowed_origins.clone();
+    let mut server = HttpServer::new(move || {
+        App::new()
+            .app_data(state.clone())
+            .app_data(api::json_config())
+            .wrap(DefaultHeaders::new().add(("Cache-Control", "no-store")))
+            .wrap(api::cors(&origins))
+            .wrap_fn(|req, srv| {
+                let future = srv.call(req);
+                async move {
+                    let response = future.await?;
+                    audit::http_response(response.status().as_u16());
+                    Ok(response)
+                }
+            })
+            .configure(api::configure)
+    })
+    .workers(config.workers)
+    .shutdown_timeout(config.shutdown_timeout_secs)
+    .disable_signals()
+    .listen(listener)?
+    .run();
+    let handle = server.handle();
+    let deadline = std::time::Duration::from_secs(config.shutdown_timeout_secs);
+    tokio::select! {
+        result = &mut server => result?,
+        signal = backend::shutdown::wait(config.shutdown_signal_file) => {
+            if signal.is_err() {
+                tracing::error!(target: "patchwork_audit", event = "shutdown_signal_unavailable");
+            }
+            tracing::info!(target: "patchwork_audit", event = "draining");
+            // Upgraded sockets can outlive Actix's HTTP worker drain. Bound the
+            // whole operation, not only the worker's individual request timeout.
+            match tokio::time::timeout(deadline, async {
+                handle.stop(true).await;
+                (&mut server).await
+            }).await {
+                Ok(result) => result?,
+                Err(_) => {
+                    tracing::warn!(target: "patchwork_audit", event = "http_drain_deadline");
+                    let _ = tokio::time::timeout(std::time::Duration::from_secs(2), handle.stop(false)).await;
+                }
+            }
+        }
     }
-}
-
-// 验证响应
-#[derive(Serialize)]
-pub struct VerifyRsp {
-    pub identity: UserIdentity,
-}
-
-// 错误响应
-#[derive(Serialize)]
-struct ErrorResponse {
-    error: String,
-}
-
-// 设置路由
-pub fn auth_routes() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/api/auth/create", post(create_identity))
-        .route("/api/auth/verify", post(verify_identity))
-        .route("/api/auth/nickname", put(update_nickname))
-}
-
-// 创建新身份
-async fn create_identity(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<CreateRsp>, (StatusCode, Json<ErrorResponse>)> {
-    let user_id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().timestamp();
-
-    // 默认昵称为 "玩家_" + 随机数
-    let random_suffix: String = (0..4)
-        .map(|_| rand::random::<u8>() % 10)
-        .map(|n| char::from_digit(n as u32, 10).unwrap())
-        .collect();
-    let nickname = format!("玩家_{}", random_suffix);
-
-    let claims = Claims {
-        sub: user_id.clone(),
-        nickname: nickname.clone(),
-        iat: now,
-        exp: now + 24 * 3600,
-    };
-
-    let jwt = encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
-    )
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
-                error: format!("生成 JWT 失败: {}", e),
-            }),
-        )
-    })?;
-
-    let identity = UserIdentity {
-        user_id,
-        nickname,
-        created_at: now,
-    };
-
-    Ok(Json(CreateRsp { jwt, identity }))
-}
-
-// 验证身份
-async fn verify_identity(
-    State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
-) -> Result<Json<VerifyRsp>, (StatusCode, Json<ErrorResponse>)> {
-    let claims = extract_and_verify_jwt(&state, &headers)?;
-
-    let identity = UserIdentity {
-        user_id: claims.sub,
-        nickname: claims.nickname,
-        created_at: claims.iat,
-    };
-
-    Ok(Json(VerifyRsp { identity }))
-}
-
-// 更新昵称
-async fn update_nickname(
-    State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
-    Json(payload): Json<UpdateNicknameReq>,
-) -> Result<Json<UpdateRsp>, (StatusCode, Json<ErrorResponse>)> {
-    // 验证昵称
-    let nickname = payload.nickname.trim().to_string();
-
-    if nickname.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "昵称不能为空".to_string(),
-            }),
-        ));
+    if let Some(db) = database {
+        // Worker-runtime teardown can abandon asynchronous pool-return work.
+        // Closing sockets on process exit releases any remaining DB transaction.
+        if tokio::time::timeout(deadline, db.close()).await.is_err() {
+            tracing::warn!(target: "patchwork_audit", event = "database_close_deadline");
+        }
     }
-
-    if nickname.len() > 20 {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                error: "昵称不能超过20个字符".to_string(),
-            }),
-        ));
-    }
-
-    // 验证当前 JWT
-    let old_claims = extract_and_verify_jwt(&state, &headers)?;
-
-    // 创建新的 JWT（保持相同的 user_id 和 created_at）
-    let now = chrono::Utc::now().timestamp();
-    let new_claims = Claims {
-        sub: old_claims.sub.clone(),
-        nickname: nickname.clone(),
-        iat: old_claims.iat,
-        exp: now + 24 * 3600, // 重新设置 10 年过期时间
-    };
-
-    let new_jwt = encode(
-        &Header::default(),
-        &new_claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
-    )
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
-                error: format!("生成新 JWT 失败: {}", e),
-            }),
-        )
-    })?;
-
-    let identity = UserIdentity {
-        user_id: old_claims.sub,
-        nickname,
-        created_at: old_claims.iat,
-    };
-
-    Ok(Json(UpdateRsp {
-        jwt: new_jwt,
-        identity,
-    }))
+    audit::flush_pool_timings();
+    tracing::info!(target: "patchwork_audit", event = "stopped");
+    Ok(())
 }
-
-// 从 Header 中提取并验证 JWT
-fn extract_and_verify_jwt(
-    state: &AppState,
-    headers: &HeaderMap,
-) -> Result<Claims, (StatusCode, Json<ErrorResponse>)> {
-    let auth_header = headers
-        .get("Authorization")
-        .and_then(|v| v.to_str().ok())
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(ErrorResponse {
-                error: "缺少 Authorization header".to_string(),
-            }),
-        ))?;
-
-    let jwt = auth_header.strip_prefix("Bearer ").ok_or((
-        StatusCode::UNAUTHORIZED,
-        Json(ErrorResponse {
-            error: "Authorization header 格式错误".to_string(),
-        }),
-    ))?;
-
-    let token_data = decode::<Claims>(
-        jwt,
-        &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
-        &Validation::default(),
-    )
-    .map_err(|e| {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(ErrorResponse {
-                error: format!("JWT 验证失败: {}", e),
-            }),
-        )
-    })?;
-
-    Ok(token_data.claims)
-}
-
-#[shuttle_runtime::main]
-async fn main(
-    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
-) -> shuttle_axum::ShuttleAxum {
-    // 从环境变量或配置文件读取 JWT secret
-    
-    let jwt_secret = secrets.get("JWT_SECRET").expect("fail to load JWT_SECRET");
-
-    let state = Arc::new(AppState::new(jwt_secret));
-
-    let cors = CorsLayer::new()
-        .allow_origin([
-            "http://127.0.0.1:8080".parse().unwrap(),
-            "http://localhost:8080".parse().unwrap(),
-            "https://ckiddo.github.io/patchwork/".parse().unwrap(),
-        ])
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_headers(Any);
-
-    let app = Router::new()
-        .merge(auth_routes())
-        .with_state(state)
-        .layer(cors);
-
-    Ok(app.into())
-}
-
-// #[tokio::main]
-// async fn main() {
-//     // 从环境变量或配置文件读取 JWT secret
-//     let jwt_secret = std::env::var("JWT_SECRET")
-//         .expect("fail to load JWT_SECRET");
-
-//     let state = Arc::new(AppState::new(jwt_secret));
-
-//     let cors = CorsLayer::new()
-//         .allow_origin([
-//             "http://127.0.0.1:8080".parse().unwrap(),
-//             "http://localhost:8080".parse().unwrap(),
-//             "https://ckiddo.github.io/patchwork/".parse().unwrap(),
-//         ])
-//         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-//         .allow_headers(Any);
-
-//     let app = Router::new()
-//         .merge(auth_routes())
-//         .with_state(state)
-//         .layer(cors);
-
-//     // 启动
-//     let listener = tokio::net::TcpListener::bind("0.0.0.0:5380").await.unwrap();
-//     axum::serve(listener, app).await.unwrap();
-// }

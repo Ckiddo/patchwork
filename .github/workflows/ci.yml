@@ -1,0 +1,105 @@
+name: Foundation checks
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Format foundation crates
+        run: cargo fmt -p backend -p util_lib -p game_core -- --check
+      - name: Contracts, domain boundaries and backend tests
+        run: cargo test --locked -p backend -p util_lib -p game_core
+      - name: Lint foundation crates
+        run: cargo clippy --locked -p backend -p util_lib -p game_core --all-targets -- -D warnings
+      - name: Build standalone backend
+        run: cargo build --locked -p backend
+      - name: Real process lifecycle and HTTP smoke test
+        run: python tools/ci/smoke_backend.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser credential state and cross-tab coordination
+        run: node --test tools/ci/browser_session.test.mjs
+
+  postgres-test-service:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: patchwork_ci
+          POSTGRES_PASSWORD: disposable_ci_only
+          POSTGRES_DB: patchwork_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U patchwork_ci -d patchwork_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated CI database (no production credentials)
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: patchwork_ci
+          PGPASSWORD: disposable_ci_only
+          PGDATABASE: patchwork_ci
+        run: psql -X --set ON_ERROR_STOP=1 --file tools/ci/postgres-smoke.sql
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build runtime and explicit migration command
+        run: cargo build --locked -p backend
+      - name: Install local WebSocket probe dependency
+        run: python -m pip install websockets==13.1
+      - name: Migrations, least privilege, concurrent transactions and fault recovery
+        env:
+          PGPASSWORD: disposable_ci_only
+        run: python tools/ci/postgres_suite.py --ci-service
+
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      NO_COLOR: 'true'
+      CARGO_BUILD_JOBS: '2'
+      PATCHWORK_API_BASE: ${{ vars.PATCHWORK_API_BASE }}
+      BEVY_ASSET_PATH: ${{ github.workspace }}/assets
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk@0.21.14
+      - name: Validate public API configuration contract
+        run: |
+          python tools/ci/validate_api_base_test.py
+          python tools/deploy/validate_api_base.py "$PATCHWORK_API_BASE"
+      - name: Build GitHub Pages frontend
+        run: trunk build --release --locked --public-url /patchwork/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patchwork-pages
+          path: dist
+          if-no-files-found: error

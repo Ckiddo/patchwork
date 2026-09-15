@@ -1,0 +1,260 @@
+{
+  "square_missing_domino": [
+    {
+      "id": 1,
+      "x": 0,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 11,
+      "x": 0,
+      "y": 1,
+      "turns": 2,
+      "flipped": true
+    },
+    {
+      "id": 5,
+      "x": 0,
+      "y": 5,
+      "turns": 2,
+      "flipped": false
+    },
+    {
+      "id": 3,
+      "x": 1,
+      "y": 3,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 7,
+      "x": 2,
+      "y": 5,
+      "turns": 1,
+      "flipped": true
+    },
+    {
+      "id": 4,
+      "x": 5,
+      "y": 2,
+      "turns": 2,
+      "flipped": false
+    },
+    {
+      "id": 8,
+      "x": 4,
+      "y": 2,
+      "turns": 3,
+      "flipped": true
+    },
+    {
+      "id": 17,
+      "x": 4,
+      "y": 0,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 21,
+      "x": 2,
+      "y": 0,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 32,
+      "x": 2,
+      "y": 1,
+      "turns": 0,
+      "flipped": false
+    }
+  ],
+  "other_square_missing_special": [
+    {
+      "id": 13,
+      "x": 0,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 30,
+      "x": 0,
+      "y": 1,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 15,
+      "x": 0,
+      "y": 4,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 16,
+      "x": 2,
+      "y": 5,
+      "turns": 3,
+      "flipped": false
+    },
+    {
+      "id": 19,
+      "x": 5,
+      "y": 2,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 20,
+      "x": 5,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 24,
+      "x": 3,
+      "y": 3,
+      "turns": 2,
+      "flipped": false
+    },
+    {
+      "id": 33,
+      "x": 2,
+      "y": 3,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 22,
+      "x": 2,
+      "y": 1,
+      "turns": 3,
+      "flipped": false
+    },
+    {
+      "id": 23,
+      "x": 2,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    }
+  ],
+  "board_missing_center": [
+    {
+      "id": 1,
+      "x": 0,
+      "y": 0,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 10,
+      "x": 0,
+      "y": 1,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 3,
+      "x": 0,
+      "y": 3,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 4,
+      "x": 0,
+      "y": 5,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 5,
+      "x": 2,
+      "y": 4,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 8,
+      "x": 1,
+      "y": 7,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 2,
+      "x": 2,
+      "y": 5,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 17,
+      "x": 3,
+      "y": 7,
+      "turns": 1,
+      "flipped": false
+    },
+    {
+      "id": 7,
+      "x": 7,
+      "y": 5,
+      "turns": 0,
+      "flipped": true
+    },
+    {
+      "id": 11,
+      "x": 6,
+      "y": 5,
+      "turns": 2,
+      "flipped": true
+    },
+    {
+      "id": 15,
+      "x": 6,
+      "y": 3,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 13,
+      "x": 4,
+      "y": 2,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 9,
+      "x": 2,
+      "y": 1,
+      "turns": 0,
+      "flipped": false
+    },
+    {
+      "id": 19,
+      "x": 2,
+      "y": 0,
+      "turns": 3,
+      "flipped": false
+    },
+    {
+      "id": 16,
+      "x": 7,
+      "y": 0,
+      "turns": 2,
+      "flipped": false
+    },
+    {
+      "id": 20,
+      "x": 6,
+      "y": 0,
+      "turns": 3,
+      "flipped": false
+    }
+  ]
+}

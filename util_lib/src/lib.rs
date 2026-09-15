@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub mod protocol;
+
 // JWT Claims
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {

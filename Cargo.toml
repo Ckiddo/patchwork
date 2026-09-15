@@ -1,5 +1,6 @@
 [workspace]
-members = ["backend", "util_lib"]
+members = ["backend", "util_lib", "game_core"]
+resolver = "3"
 [package]
 name = "patchwork"
 version = "0.1.0"
@@ -23,12 +24,29 @@ wasm-bindgen = "0.2.104"
 wasm-bindgen-futures = "0.4.54"
 web-sys = { version = "0.3.81", features = [
     "Window",
+    "Event",
+    "EventTarget",
+    "CustomEvent",
+    "HtmlInputElement",
+    "KeyboardEvent",
+    "PointerEvent",
+    "MediaQueryList",
     "Document",
     "HtmlCanvasElement",
     "Element",
+    "Storage",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "Headers",
+    "console",
 ] }
 yew = { version = "0.21.0", features = ["csr"] }
 util_lib ={ path = "util_lib"}
+game_core = { path = "game_core" }
+prost = "0.14"
+js-sys = "0.3"
 
 
 [profile.release]

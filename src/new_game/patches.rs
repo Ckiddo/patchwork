@@ -4,7 +4,7 @@ use bevy::{ecs::query::QueryEntityError, prelude::*};
 
 use crate::{
     game::WIDTH_BASE,
-    new_game::{event::PatchChoosedEvent, game_state::ShapeDirection, generate_color, mid_pos},
+    new_game::{event::PatchChoosedEvent, game_state::ShapeDirection, generate_color},
 };
 
 // 展示出的shape对应哪个patch
@@ -13,11 +13,36 @@ struct PatchComponent {
     pub patch_idx: usize,
 }
 
-
 // 绿色三角对应个patch
 #[derive(Component)]
 pub struct ShapeChooseMark {
     pub patch_idx: usize,
+}
+
+/// Frozen normalized shapes use the existing child-Sprite drawing pattern.
+pub fn spawn_frozen_patch_cells(
+    commands: &mut Commands,
+    parent: Entity,
+    cells: &[(u8, u8)],
+    size: f32,
+    color: Color,
+) {
+    let width = f32::from(cells.iter().map(|c| c.0).max().unwrap_or(0) + 1) * size;
+    let height = f32::from(cells.iter().map(|c| c.1).max().unwrap_or(0) + 1) * size;
+    for &(x, y) in cells {
+        let child = commands
+            .spawn((
+                Sprite::from_color(color, Vec2::splat(size - 1.5)),
+                Transform::from_xyz(
+                    f32::from(x) * size + size / 2. - width / 2.,
+                    height / 2. - f32::from(y) * size - size / 2. + 7.,
+                    0.4,
+                ),
+                Pickable::IGNORE,
+            ))
+            .id();
+        commands.entity(parent).add_child(child);
+    }
 }
 
 pub struct Patch {
@@ -149,7 +174,6 @@ fn test_get_pos() {
         patch.get_pos((0, 0), ShapeDirection::North),
         vec![(0, 0), (0, 1), (0, 2), (-1, 0)]
     );
-
 }
 
 pub fn new_patches() -> Vec<Patch> {
@@ -325,41 +349,19 @@ pub fn new_patches() -> Vec<Patch> {
 }
 
 pub fn generate_perimeter_positions(n: usize) -> VecDeque<bevy_egui::egui::Vec2> {
-    let start_j = 7;
-    let mut i = 0;
-    let mut j = start_j;
-    let square_size = 120.0;
-
-    let mut idx = 0;
-    let mut ret = VecDeque::new();
-    while j < 15 && idx < n {
-        ret.push_back(mid_pos(i, j, square_size));
-        j += 1;
-        idx += 1;
-    }
-    while i < 8 && idx < n {
-        ret.push_back(mid_pos(i, j, square_size));
-        i += 1;
-        idx += 1;
-    }
-    while j >= 1 && idx < n {
-        ret.push_back(mid_pos(i, j, square_size));
-        j -= 1;
-        idx += 1;
-    }
-    while i >= 1 && idx < n {
-        ret.push_back(mid_pos(i, j, square_size));
-        i -= 1;
-        idx += 1;
-    }
-    while j < start_j && idx < n {
-        ret.push_back(mid_pos(i, j, square_size));
-        j += 1;
-        idx += 1;
-    }
-    ret
+    // Stable clockwise slots across all four sides. Removing a patch never compacts them.
+    (0..n.min(33))
+        .map(|slot| {
+            let (x, y) = match slot {
+                0..=10 => (-780. + slot as f32 * 156., 480.),
+                11..=16 => (900., 360. - (slot - 11) as f32 * 144.),
+                17..=26 => (780. - (slot - 17) as f32 * (1560. / 9.), -480.),
+                _ => (-900., -360. + (slot - 27) as f32 * 144.),
+            };
+            bevy_egui::egui::vec2(x, y)
+        })
+        .collect()
 }
-
 
 pub fn inner_handle_query_entity_error(e: QueryEntityError) {
     warn!("click choose shape err: {:?}", e);
@@ -384,7 +386,6 @@ fn on_click_choose_shape(
         }
     }
 }
-
 
 fn spawn_patch(
     commands: &mut Commands,

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::new_game::{game_state::InteractiveInfo, patches::ShapeChooseMark};
+use bevy::prelude::*;
 
 #[derive(Event)]
 pub struct PatchChoosedEvent {

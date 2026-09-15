@@ -8,22 +8,22 @@ permissions:
   contents: write
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - name: Require the public API address before publishing
+        env:
+          PATCHWORK_API_BASE: ${{ vars.PATCHWORK_API_BASE }}
+        run: |
+          python3 tools/deploy/validate_api_base.py "$PATCHWORK_API_BASE"
+      - uses: actions/download-artifact@v4
         with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          
-      - name: Install Trunk
-        run: cargo install trunk
-        
-      - name: Build
-        run: trunk build --release --public-url /patchwork/ 
+          name: patchwork-pages
+          path: dist
         
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

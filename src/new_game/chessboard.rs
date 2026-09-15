@@ -20,6 +20,67 @@ pub struct BlockInfo {
     pub row: usize,
 }
 
+/// Same 720-unit board as the original scene; core coordinates go right and down.
+pub fn quilt_cell_position(x: u8, y: u8) -> Vec2 {
+    Vec2::new(
+        f32::from(x) * 80. + 40. - 360.,
+        360. - f32::from(y) * 80. - 40.,
+    )
+}
+pub fn spawn_authoritative_board(
+    commands: &mut Commands,
+    root: Entity,
+    owner: game_core::Seat,
+    mine: bool,
+) -> Entity {
+    use super::authority::{QuiltCell, board_click, board_hover};
+    let board = commands
+        .spawn((
+            Transform::from_xyz(if mine { 420. } else { -420. }, 0., 0.),
+            Visibility::Visible,
+        ))
+        .id();
+    commands.entity(root).add_child(board);
+    let border = commands
+        .spawn((
+            Sprite::from_color(
+                if mine {
+                    Color::srgb_u8(111, 165, 181)
+                } else {
+                    Color::srgb_u8(122, 151, 158)
+                },
+                Vec2::splat(734.),
+            ),
+            Transform::from_xyz(0., 0., -0.1),
+            Pickable::IGNORE,
+        ))
+        .id();
+    commands.entity(board).add_child(border);
+    for y in 0..9u8 {
+        for x in 0..9u8 {
+            let pos = quilt_cell_position(x, y);
+            // Existing tile sprite + inset drawing; replace local write observers with intents.
+            let cell = commands
+                .spawn((
+                    Sprite::from_color(Color::srgb_u8(78, 109, 116), Vec2::splat(80.)),
+                    Transform::from_xyz(pos.x, pos.y, 0.),
+                    QuiltCell { owner, x, y },
+                    Pickable::default(),
+                ))
+                .observe(board_click)
+                .observe(board_hover)
+                .with_child((
+                    Sprite::from_color(Color::srgb_u8(25, 51, 59), Vec2::splat(77.)),
+                    Transform::from_xyz(0., 0., 0.1),
+                    Pickable::IGNORE,
+                ))
+                .id();
+            commands.entity(board).add_child(cell);
+        }
+    }
+    board
+}
+
 fn board_on_click(
     on: On<Pointer<Click>>,
     query: Query<&BlockInfo>,
