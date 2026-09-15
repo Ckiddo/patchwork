@@ -13,6 +13,7 @@ pub struct Resolved {
 struct Job {
     mutation: RoomMutation,
     reply: oneshot::Sender<Result<Resolved, E>>,
+    recovery_attempts: u8,
 }
 pub struct Room {
     id: Uuid,
@@ -70,6 +71,8 @@ impl Room {
         );
     }
     fn recover(&mut self, job: Job, ctx: &mut Context<Self>) {
+        let mut job = job;
+        job.recovery_attempts = job.recovery_attempts.saturating_add(1);
         let db = self.database.clone();
         ctx.spawn(
             async move {
@@ -83,6 +86,7 @@ impl Room {
             .into_actor(self)
             .map(|(job, result), actor, ctx| match result {
                 Ok(Some(outcome)) => actor.finish(job, Ok(outcome), ctx),
+                Ok(None) if job.recovery_attempts < 10 => actor.recover(job, ctx),
                 Ok(None) => actor.finish(job, Err(E::Unavailable), ctx),
                 Err(E::RequestIdConflict) => actor.finish(job, Err(E::RequestIdConflict), ctx),
                 Err(_) => actor.recover(job, ctx),
@@ -232,6 +236,7 @@ impl Handler<Execute> for Room {
         self.queue.push_back(Job {
             mutation: m.0,
             reply,
+            recovery_attempts: 0,
         });
         self.next(ctx);
         Box::pin(async move { receive.await.unwrap_or(Err(E::Unavailable)) })
