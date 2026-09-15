@@ -806,7 +806,10 @@ async fn room_actor_resolves_lost_commit_ack_before_releasing_user_reservation()
     let (port, armed, proxy) = pg_proxy::start(config.port).await;
     let relay = db_with(false, |c| {
         c.port = port;
-        c.max_connections = 1;
+        // Keep a spare connection for the room actor's recovery read after
+        // the relay drops the original COMMIT acknowledgement. The
+        // persistence-layer max-one-pool case is covered separately.
+        c.max_connections = 2;
     })
     .await;
     let h = harness(relay.clone()).await;
