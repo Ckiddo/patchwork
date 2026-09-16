@@ -31,6 +31,8 @@ export class SessionClient {
             try { response = await this.fetcher(this.base + path, {method:'POST',headers,body:body ? JSON.stringify(body) : undefined,cache:'no-store',signal:controller.signal}); }
             catch { throw new SessionError('network'); }
             if (response.status === 401) throw new SessionError('unauthorized');
+            if (response.status === 403) throw new SessionError('blocked');
+            if (response.status === 429) throw new SessionError('rate_limited');
             if (!response.ok) throw new SessionError('server');
             try { return await response.json(); } catch { throw new SessionError('response'); }
         } finally { clearTimeout(timeout); }
@@ -42,6 +44,16 @@ export class SessionClient {
         this.save({kind:'session',value}); return value;
     }
     async pending(record) {
+        try { return await this.completePending(record); }
+        catch (error) {
+            if (error instanceof SessionError && error.kind === 'unauthorized') {
+                if (record.kind === 'legacy') throw new SessionError('legacy_unavailable');
+                if (record.kind === 'rotate') throw new SessionError('session_expired');
+            }
+            throw error;
+        }
+    }
+    async completePending(record) {
         if (record.kind === 'rotate') {
             const value = await this.request('/auth/refresh', {body:record.rotation});
             if (value.refresh_token !== record.rotation.next_refresh_token) throw new SessionError('response');
@@ -51,36 +63,57 @@ export class SessionClient {
         if (value.refresh_token !== record.candidate.refresh_token) throw new SessionError('response');
         return this.accept(value, record.candidate.session_id);
     }
-    async initialize() {
+    async initialize({replaceRejected = false} = {}) {
         if (!this.base || !/^https?:\/\//.test(this.base)) throw new SessionError('configuration');
         if (!this.locks?.request) throw new SessionError('locks');
         return this.locks.request(this.key, async () => {
-            let record = this.load();
-            if (!record) {
-                let legacy; try { legacy = this.storage.getItem('game_jwt_token'); } catch { throw new SessionError('storage'); }
-                record = {kind:legacy ? 'legacy' : 'create',candidate:this.candidate(),...(legacy ? {legacy_jwt:legacy} : {})};
-                this.save(record); // Save before the first side effect, including first identity creation.
+            // Recheck under the same lock: another tab or a recovered service may
+            // already have restored this identity while the confirmation was open.
+            try { return await this.initializeLocked(); }
+            catch (error) {
+                if (!replaceRejected || !(error instanceof SessionError) ||
+                    !['legacy_unavailable','session_expired'].includes(error.kind)) throw error;
             }
-            if (record.kind !== 'session') return this.pending(record);
-            const current = record.value;
-            if (!current?.session_id || !current?.refresh_token || !current?.jwt || !current?.identity?.user_id) throw new SessionError('storage');
+            // Only an explicit user action can replace a definitively rejected
+            // identity. Persist the full old record before changing the active one.
             try {
-                const verified = await this.request('/auth/verify', {jwt:current.jwt});
-                if (verified.identity?.user_id !== current.identity.user_id) throw new SessionError('response');
-                const value = {...current,identity:verified.identity}; this.save({kind:'session',value}); return value;
-            } catch (error) {
-                if (!(error instanceof SessionError) || error.kind !== 'unauthorized') throw error;
-            }
-            const rotation = {session_id:current.session_id,refresh_token:current.refresh_token,next_refresh_token:this.candidate().refresh_token,rotation_id:this.crypto.randomUUID()};
-            record = {kind:'rotate',value:current,rotation}; this.save(record);
+                const previous = this.storage.getItem(this.key);
+                if (!previous) throw Error();
+                this.storage.setItem(`${this.key}:backup:${this.crypto.randomUUID()}`, previous);
+            } catch { throw new SessionError('storage'); }
+            const record = {kind:'create',candidate:this.candidate()};
+            this.save(record);
             return this.pending(record);
         });
     }
+    async initializeLocked() {
+        let record = this.load();
+        if (!record) {
+            let legacy; try { legacy = this.storage.getItem('game_jwt_token'); } catch { throw new SessionError('storage'); }
+            record = {kind:legacy ? 'legacy' : 'create',candidate:this.candidate(),...(legacy ? {legacy_jwt:legacy} : {})};
+            this.save(record); // Save before the first side effect, including first identity creation.
+        }
+        if (record.kind !== 'session') return this.pending(record);
+        const current = record.value;
+        if (!current?.session_id || !current?.refresh_token || !current?.jwt || !current?.identity?.user_id) throw new SessionError('storage');
+        try {
+            const verified = await this.request('/auth/verify', {jwt:current.jwt});
+            if (verified.identity?.user_id !== current.identity.user_id) throw new SessionError('response');
+            const value = {...current,identity:verified.identity}; this.save({kind:'session',value}); return value;
+        } catch (error) {
+            if (!(error instanceof SessionError) || error.kind !== 'unauthorized') throw error;
+        }
+        const rotation = {session_id:current.session_id,refresh_token:current.refresh_token,next_refresh_token:this.candidate().refresh_token,rotation_id:this.crypto.randomUUID()};
+        record = {kind:'rotate',value:current,rotation}; this.save(record);
+        return this.pending(record);
+    }
 }
-export async function initializeSession(base) {
-    try { return await new SessionClient(base, {storage:globalThis.localStorage,fetch:globalThis.fetch.bind(globalThis),crypto:globalThis.crypto,locks:globalThis.navigator.locks}).initialize(); }
+async function browserSession(base, options) {
+    try { return await new SessionClient(base, {storage:globalThis.localStorage,fetch:globalThis.fetch.bind(globalThis),crypto:globalThis.crypto,locks:globalThis.navigator.locks}).initialize(options); }
     catch (error) { throw new Error(error instanceof SessionError ? error.kind : 'storage'); }
 }
+export function initializeSession(base) { return browserSession(base); }
+export function startNewSession(base) { return browserSession(base, {replaceRejected:true}); }
 let socket;
 let pongAt = 0;
 export function noteSessionPong() { pongAt = Date.now(); }
