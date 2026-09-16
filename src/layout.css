@@ -147,9 +147,12 @@ button:focus-visible, input:focus-visible, summary:focus-visible {
 .room-details summary { color: #626f85; cursor: pointer; font-size: 12px; }
 .room-details p, .room-details label, .room-details button { margin-top: 8px; }
 
-.loading-screen, .error-screen { margin: auto; padding: 30px; border-radius: 12px; background: white; text-align: center; }
+.loading-screen, .error-screen { margin: auto; max-width: 560px; padding: 30px; border-radius: 12px; background: white; text-align: center; line-height: 1.6; }
 .error-screen h2 { color: #a63221; margin-bottom: 12px; }
 .error-screen button { margin-top: 16px; padding: 8px 16px; border: 0; border-radius: 6px; background: #5267cc; color: white; }
+.error-screen button + button { margin-left: 8px; }
+.identity-confirmation { margin-top: 16px; padding: 16px; border-radius: 8px; background: #edf1ff; }
+.error-screen .secondary { background: #e0e5f0; color: #253047; }
 .spinner { width: 32px; height: 32px; border: 3px solid #edf1ff; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

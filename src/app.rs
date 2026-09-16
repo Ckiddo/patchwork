@@ -15,7 +15,8 @@ pub fn app() -> Html {
     let jwt_token = use_state(|| Option::<String>::None);
     let user_info = use_state(|| Option::<(String, String)>::None); // (user_id, nickname)
     let is_loading = use_state(|| true);
-    let error_message = use_state(|| Option::<String>::None);
+    let error_message = use_state(|| Option::<crate::browser_session::SessionFailure>::None);
+    let confirm_new_identity = use_state(|| false);
     let connected = use_state(|| false);
     let connection_epoch = use_state(|| 0u32);
     let connection_status = use_state(String::new);
@@ -40,8 +41,7 @@ pub fn app() -> Html {
                         connection_epoch.set(1);
                     }
                     Err(e) => {
-                        error_message.set(Some(format!("获取身份失败: {}", e)));
-                        web_sys::console::error_1(&format!("JWT init failed: {}", e).into());
+                        error_message.set(Some(e));
                     }
                 }
                 is_loading.set(false);
@@ -126,6 +126,39 @@ pub fn app() -> Html {
         });
     }
 
+    let start_new_identity = {
+        let jwt_token = jwt_token.clone();
+        let user_info = user_info.clone();
+        let is_loading = is_loading.clone();
+        let error_message = error_message.clone();
+        let confirm_new_identity = confirm_new_identity.clone();
+        let connected = connected.clone();
+        let connection_epoch = connection_epoch.clone();
+        Callback::from(move |_| {
+            let jwt_token = jwt_token.clone();
+            let user_info = user_info.clone();
+            let is_loading = is_loading.clone();
+            let error_message = error_message.clone();
+            let connected = connected.clone();
+            let connection_epoch = connection_epoch.clone();
+            confirm_new_identity.set(false);
+            is_loading.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                match crate::browser_session::start_new_identity(jwt_base_url()).await {
+                    Ok((token, user_id, nickname)) => {
+                        jwt_token.set(Some(token));
+                        user_info.set(Some((user_id, nickname)));
+                        error_message.set(None);
+                        connected.set(true);
+                        connection_epoch.set(1);
+                    }
+                    Err(error) => error_message.set(Some(error)),
+                }
+                is_loading.set(false);
+            });
+        })
+    };
+
     html!(
         <div class="app-container">
             <header class="app-header">
@@ -150,13 +183,24 @@ pub fn app() -> Html {
                 } else if let Some(error) = (*error_message).as_ref() {
                     html!(
                         <div class="error-screen">
-                            <h2>{ "❌ 错误" }</h2>
-                            <p>{ error }</p>
+                            <h2>{ "暂时无法进入" }</h2>
+                            <p role="alert">{ error.message }</p>
                             <button onclick={Callback::from(|_| {
                                 window().unwrap().location().reload().unwrap();
                             })}>
-                                { "重新加载" }
+                                { "重试原身份" }
                             </button>
+                            if error.can_start_new {
+                                if *confirm_new_identity {
+                                    <div class="identity-confirmation">
+                                        <p>{"新身份不会继承原房间或对局。旧凭据会备份在此浏览器中，但备份不保证原身份仍可恢复。"}</p>
+                                        <button onclick={start_new_identity.clone()}>{"保留旧凭据并继续"}</button>
+                                        <button class="secondary" onclick={let confirm = confirm_new_identity.clone(); Callback::from(move |_| confirm.set(false))}>{"取消"}</button>
+                                    </div>
+                                } else {
+                                    <button onclick={let confirm = confirm_new_identity.clone(); Callback::from(move |_| confirm.set(true))}>{"使用新身份进入"}</button>
+                                }
+                            }
                             if option_env!("PATCHWORK_LOCAL_TEST") == Some("true") {
                                 <p>{"临时测试库已重新创建时，可重置此页面的测试身份。此操作放弃旧测试身份。"}</p>
                                 <button onclick={Callback::from(|_| {

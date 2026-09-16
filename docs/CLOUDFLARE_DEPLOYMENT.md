@@ -72,6 +72,16 @@ GitHub Pages 前端
 
 探测检查 TLS、Cloudflare 响应标识、两次不缓存响应、CORS 预检、内部路径 404、真实 WSS 升级，以及错误 Origin/查询参数的拒绝。不会创建用户或房间。报告为 `artifacts/t50-public-edge.json`。
 
+## 2026-09-16 身份访问错误修复
+
+正式入口为 `https://ckiddo.github.io/patchwork/`，API 为 `https://api.ckiddo.fun/api`。Pages 页面及 JS/WASM 资源正常；正式 API 新建、验证、注销返回 200，未启用旧版身份迁入。原前端把网络、存储、服务异常和旧身份迁入拒绝统一显示为“身份服务暂不可用或会话已失效”，迁入被拒后没有正式恢复入口。
+
+现按错误类型显示原因；仅旧版迁入或原会话续期明确返回 401 时，提供“使用新身份进入”。用户确认新身份不继承原房间/对局后，先把原完整会话记录备份到当前浏览器的 `patchwork_session_v1:<API>:backup:<UUID>`，再保存新建候选凭据并请求创建。原 `game_jwt_token` 保留。备份只是本地凭据副本，不保证旧身份仍可在服务端恢复；不复制到源码、日志或报告。
+
+确认操作在同一 Web Lock 内重新验证旧身份，避免另一标签页已经恢复身份后又被替换。网络/403/429/5xx/存储错误不触发替换；备份失败不覆盖旧记录；新建响应丢失仍用原候选重试。
+
+16 项 Node 会话回归通过。直接加载前端 `SessionClient` 对生产 HTTPS API 实测：模拟旧凭据迁入 401 → 显式确认 → 本地备份 → 新建 200 → 再次初始化验证 200，身份一致；该测试会话已注销。测试仅使用内存存储和独立测试身份，不读取或修改用户浏览器凭据。真实 Chrome 自动化因 `Codex auth token is unavailable` 无法连接，因此无法确认用户本机属于哪一错误分支，也不将本次接口检查计作 T52 双浏览器验收。
+
 ## 前端发布与回退
 
 公网 API 探测通过后，设置 GitHub 仓库 Actions 变量 `PATCHWORK_API_BASE=https://实际API子域名/api`。`.github/workflows/deploy.yml` 和 `tools/deploy/probe_edge.py` 共用 `tools/deploy/validate_api_base.py`，拒绝空地址、非 HTTPS、错误路径、用户信息、查询参数、片段、非 443 端口和尾点主机名；`ci.yml` 使用相同变量构建 Pages 产物。客户端 WSS 从此地址转换，发布时不需另设 WebSocket 地址。
