@@ -5,7 +5,7 @@ import uuid
 from contextlib import ExitStack
 from websockets.sync.client import connect
 from websockets.exceptions import ConnectionClosed
-from friends_smoke import Client, integer, expect_room
+from friends_smoke import Client, integer, expect_room, expect_error
 from websocket_smoke import field, decode
 
 
@@ -112,8 +112,18 @@ def heartbeat_check(base, request, credentials):
         deadline = time.monotonic() + 50
         pushes = 0
         while time.monotonic() < deadline:
-            current = expect_room(active.lobby(16, room=room[1].decode()))
-            expect_room(active.lobby(13, integer(1, 1), room[1].decode(), current[2]))
+            # The silent peer's expected heartbeat expiry can advance the room
+            # version between Get and Ready. Require a successful Ready after a
+            # bounded refresh; no other error or persistent conflict is accepted.
+            for _ in range(3):
+                current = expect_room(active.lobby(16, room=room[1].decode()))
+                reply = active.lobby(13, integer(1, 1), room[1].decode(), current[2])
+                if 12 in reply:
+                    expect_room(reply)
+                    break
+                expect_error(reply, 10)
+            else:
+                raise AssertionError('room version did not stabilize during heartbeat expiry')
             try:
                 silent.receive()
                 pushes += 1
